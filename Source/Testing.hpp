@@ -34,35 +34,50 @@ struct ResultingUnit<T1,T2>
     using type = T3;
 };
 
-template<>
-struct ResultingUnit<T1, const double>
+
+template <>
+struct ResultingUnit<T1,T3>
 {
-    using type = T3;
+    using type = T2;
 };
 
-/*template <>
-struct ResultingUnit<TT1,TT2>
+template <>
+struct ResultingUnit<T2,T3>
 {
-    using type = TT3;
-};*/
+    using type = T1;
+};
 
-template<typename Unit>
+template<typename Unit1, typename Unit2>
 struct TV
 {
-    Unit x;
-    Unit y;
+    Unit1 x;
+    Unit2 y;
 
     template<typename Multiplier>
     inline auto operator*( const Multiplier& scalar )
     {
-        using ResultingUnit = typename ResultingUnit<Unit,Multiplier>::type;
-        TV<ResultingUnit> Result;
+        using ResultingUnit1 = typename ResultingUnit<Unit1,Multiplier>::type;
+        using ResultingUnit2 = typename ResultingUnit<Unit2,Multiplier>::type;
+        TV<ResultingUnit1, ResultingUnit2> Result;
 
         Result.x = {this->x.Value * scalar.Value};
         Result.y = {this->y.Value * scalar.Value};
 
         return Result;
     }
+
+    static TV<Unit1,Unit2> Create( Unit1 x, Unit2 y )
+    {
+        TV<Unit1,Unit2> C = {x,y};
+        return C;
+    }
+
+    void Print()
+    {
+        std::cout<<"X --> "<<x.Value<< " Y --> "<<y.Value<<"\n";
+    }
 };
+
+#define MAKE_TV(x, y) TV<decltype(x), decltype(y)>::Create(x, y)
 
 
