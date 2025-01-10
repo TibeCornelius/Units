@@ -3,9 +3,9 @@
 #include"VectorD2.hpp"
 #include"Units.hpp"
 #include"Testing.hpp"
+#include "Testing2.hpp"
 
-
-int main()
+void Test1()
 {
     T1 t1 = {3};
     T1 t2 = {3};
@@ -35,12 +35,21 @@ int main()
 
     auto VVV = vvect2 * Scalar22;
     VVV.Print();
+}
 
-    /*TV<TT1> vect2;
-    vect2.x = {4};
-    vect2.y = {5};
+int main()
+{
+    Unit<1,0> Meters = {1};
+    Unit<1,0> Meters2 = {2};
+    
 
-    TT2 Scalar2 = {5};
+    auto result = Meters + Meters2;
 
-    auto VectRR = vect2 * Scalar2;*/
+    Unit<2,0> Area = {1};
+
+    auto r = Meters * Area;
+
+    result.PrintType();
+    r.PrintType();
+
 }

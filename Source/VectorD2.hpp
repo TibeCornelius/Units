@@ -5,7 +5,7 @@
 #include<concepts>
 #include "Units.hpp"
 
-namespace D2
+/*namespace D2
 {
     template<typename VectorUnit>
     struct Vector
@@ -132,4 +132,4 @@ namespace std
             return h1 + prime * h2;
         }
     };
-}
+}*/

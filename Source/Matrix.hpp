@@ -6,7 +6,7 @@ using namespace Units;
 
 namespace D2
 {
-    template<typename MatrixUnit>
+    /*template<typename MatrixUnit>
     class Matrix2x2
     {
         public:
@@ -50,5 +50,5 @@ namespace D2
         Created._b_2 = b_2;
 
         return Created;
-    }
+    }*/
 }

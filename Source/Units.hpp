@@ -44,111 +44,17 @@ namespace Units
         }
     };
 
-    template<typename DerivedStruct>
-    struct BaseVectorUnit : BaseUnit<DerivedStruct> {};
-    template<typename DerivedStruct>
-    struct BaseScalarUnit : BaseUnit<DerivedStruct> {};
+    template<typename Unit1, typename Unit2>
+    struct ResultingUnit;
 
-    #pragma region AllUnits
-    struct Scalar;
-    struct Kilogram;
-    struct Meters;
-    struct LeverArm;//Special unit which defines the distance from a force to its rotation axis used for generating torque
-    struct Temperature;
-    struct Mol;
-    struct Luminous;
-    struct Joule;
-    struct Second;
-    struct Velocity;
-    struct Acceleration;
-    struct Momentum;
-    struct Force;
-    struct Torque;
-    struct Radian;
-    struct ElectricCurrent;
-    #pragma endregion
 
-    //Unit implementations
-
-    struct Scalar : BaseScalarUnit<Scalar>
+    struct Meter
     {
-        template <typename UnitType>
-        inline UnitType operator*(const UnitType& unit) const
-        {
-            UnitType result;
-            result.Value = this->Value * unit.Value;
-            return result;
-        }
-
-        template <typename UnitType>
-        inline UnitType operator/(const UnitType& unit) const
-        {
-            UnitType result;
-            result.Value = this->Value / unit.Value;
-            return result;
-        }
+        double Value;
     };
-    struct Kilogram : BaseScalarUnit<Kilogram>
-    { 
-        Force operator * ( const Acceleration& acceleration ) const;
-        Momentum operator* ( const Velocity& Velocity ) const;
-    };
-    struct Meters : BaseVectorUnit<Meters>
-    { 
-        Velocity operator / ( const Second& seconds ) const;
-    };
-    struct LeverArm : BaseVectorUnit<LeverArm>
+    struct Second
     {
-        Torque operator * ( const Force& distance ) const;
+        double Value;
     };
-    struct Temperature : BaseScalarUnit<Temperature> {};
-    struct Mol : BaseScalarUnit<Mol> {};
-    struct Luminous : BaseScalarUnit<Luminous> {};//Candela
-
-
-
-    struct Joule : BaseScalarUnit<Joule> {};
-    struct Second : BaseScalarUnit<Second> {};
-    struct Velocity : BaseVectorUnit<Velocity>
-    { 
-        Acceleration operator / ( const Second& seconds ) const;
-        Meters operator*(const Second& seconds) const;
-        Momentum operator*(const Kilogram& mass ) const;
-    }; // Meter per second
-    struct Acceleration : BaseVectorUnit<Acceleration>
-    {
-        Force operator * ( const Kilogram& mass ) const;
-        Velocity operator * ( const Second& mass ) const
-        {
-            return { this->Value * mass.Value };
-        }
-
-    };//Meter per second^squared
-    struct Momentum : BaseVectorUnit<Momentum>
-    {
-        Velocity operator/( const Kilogram& mass ) const;
-    };
-    struct Force : BaseVectorUnit<Force>
-    {
-        Joule operator * ( const Meters& distance ) const;
-        Acceleration operator/( const Kilogram mass ) const
-        {
-            return { this->Value / mass.Value };
-        }
-        Torque operator * ( const LeverArm& distance ) const;
-    };//Newton
-    struct Torque : BaseVectorUnit<Torque> {};
-    struct Radian : BaseScalarUnit<Radian> 
-    {
-        
-        Scalar GetCos()
-        {
-            return {std::cos( Value )};
-        }
-        Scalar GetSin()
-        {
-            return {std::sin(Value)};
-        }
-    };
-    struct ElectricCurrent : BaseScalarUnit<ElectricCurrent> {};//Ampere
+    
 }

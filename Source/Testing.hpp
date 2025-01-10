@@ -1,3 +1,4 @@
+#include <type_traits>
 
 struct T1
 {
@@ -26,23 +27,23 @@ struct T3
 
 
 template <typename Unit1, typename Unit2>
-struct ResultingUnit;
+struct TResultingUnit;
 
 template<>
-struct ResultingUnit<T1,T2>
+struct TResultingUnit<T1,T2>
 {
     using type = T3;
 };
 
 
 template <>
-struct ResultingUnit<T1,T3>
+struct TResultingUnit<T1,T3>
 {
     using type = T2;
 };
 
 template <>
-struct ResultingUnit<T2,T3>
+struct TResultingUnit<T2,T3>
 {
     using type = T1;
 };
@@ -56,8 +57,8 @@ struct TV
     template<typename Multiplier>
     inline auto operator*( const Multiplier& scalar )
     {
-        using ResultingUnit1 = typename ResultingUnit<Unit1,Multiplier>::type;
-        using ResultingUnit2 = typename ResultingUnit<Unit2,Multiplier>::type;
+        using ResultingUnit1 = typename TResultingUnit<Unit1,Multiplier>::type;
+        using ResultingUnit2 = typename TResultingUnit<Unit2,Multiplier>::type;
         TV<ResultingUnit1, ResultingUnit2> Result;
 
         Result.x = {this->x.Value * scalar.Value};
