@@ -6,21 +6,22 @@
 template<typename>
 struct is_unit : std::false_type {};
 
-#define TemplateUnitShortHand int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela
-#define UnitShortHand Unit<Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela>
+#define TEMPLATE_UNIT_SHORTHAND int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela
+#define UNIT_SHORTHAND Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
+#define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
 
-#define PREFIX_TemplateUNIT(PREFIX, UNIT) int PREFIX##UNIT
+#define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) int PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
 
 
 #define PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX) \
-    PREFIX_TemplateUNIT(PREFIX, Meters), \
-    PREFIX_TemplateUNIT(PREFIX, Seconds), \
-    PREFIX_TemplateUNIT(PREFIX, Kilogram), \
-    PREFIX_TemplateUNIT(PREFIX, Ampere), \
-    PREFIX_TemplateUNIT(PREFIX, Kelvin), \
-    PREFIX_TemplateUNIT(PREFIX, Mol), \
-    PREFIX_TemplateUNIT(PREFIX, Candela)
+    PREFIX_TEMPLATE_UNIT(PREFIX, Meters), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Seconds), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Kilogram), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Ampere), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Kelvin), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Mol), \
+    PREFIX_TEMPLATE_UNIT(PREFIX, Candela)
 
 #define PREFIXED_UNIT_SHORTHAND(PREFIX) \
     PREFIX_UNIT(PREFIX, Meters), \
@@ -30,22 +31,20 @@ struct is_unit : std::false_type {};
     PREFIX_UNIT(PREFIX, Kelvin), \
     PREFIX_UNIT(PREFIX, Mol), \
     PREFIX_UNIT(PREFIX, Candela)
+#define TYPE_PREFIXED_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
+    
 
 
-#define TemplateOtherUnitShortHand int OtherMeters, int OtherSeconds, int OtherKilogram, int OtherAmpere, int OtherKelvin,int OtherMol, int OtherCandela
-#define OtherUnitShortHand Unit<OtherMeters,OtherSeconds,OtherKilogram,OtherAmpere,OtherKelvin,OtherMol,OtherCandela>
+#define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) int PREFIX_1##Meters,int PREFIX_1##Seconds, int PREFIX_1##Kilogram, int PREFIX_1##Ampere, int PREFIX_1##Kelvin, int PREFIX_1##Mol, int PREFIX_1##Candela,int PREFIX_2##Meters, int PREFIX_2##Seconds, int PREFIX_2##Kilogram, int PREFIX_2##Ampere, int PREFIX_2##Kelvin,int PREFIX_2##Mol, int PREFIX_2##Candela
 
-
-#define DoubleTemplateUnitShortHand int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela,int OtherMeters, int OtherSeconds, int OtherKilogram, int OtherAmpere, int OtherKelvin,int OtherMol, int OtherCandela
-
-#define UnitAdditionShortHand Unit<Meters + OtherMeters, Seconds + OtherSeconds,  Kilogram + OtherKilogram, Ampere + OtherAmpere, Kelvin + OtherKelvin, Mol + OtherMol, Candela + Candela>
-#define UnitSubtractionShortHand Unit<Meters - OtherMeters, Seconds - OtherSeconds,  Kilogram - OtherKilogram, Ampere - OtherAmpere, Kelvin - OtherKelvin, Mol - OtherMol, Candela - Candela>
+#define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) Unit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
+#define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) Unit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
 
 
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
-template<TemplateUnitShortHand>
+template<TEMPLATE_UNIT_SHORTHAND>
 struct Unit;//Forward declaration
 
 template<typename T>
@@ -65,58 +64,59 @@ struct Vector;//Forward declaration
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingMultlipicationUnit;
 
-template <DoubleTemplateUnitShortHand>
-struct ResultingMultlipicationUnit<UnitShortHand,OtherUnitShortHand>
-{
-    using type = UnitAdditionShortHand;
+template <TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
+{   
+    using type = UNIT_ADDITION_SHORTHAND(,Other);
 };
 
-template <TemplateUnitShortHand,ArithemeticOrUnit Type2>
-struct ResultingMultlipicationUnit<UnitShortHand,Type2>
+template <TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
+struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
-    using type = UnitShortHand;
+    using type = TYPE_UNIT_SHORTHAND;
 };
 
 //Represents the exponents of each unit
-template <TemplateUnitShortHand>
+template <TEMPLATE_UNIT_SHORTHAND>
 struct Unit
 {
     double Value;
 
-    inline UnitShortHand operator+( UnitShortHand& Other )
+    inline TYPE_UNIT_SHORTHAND operator+( TYPE_UNIT_SHORTHAND& Other )
     {
         return { this->Value + Other.Value };
     }
 
-    inline UnitShortHand operator-( UnitShortHand& other )
+    inline TYPE_UNIT_SHORTHAND operator-( TYPE_UNIT_SHORTHAND& other )
     {
         return { this->Value - other.Value };
     }
 
-    template <TemplateOtherUnitShortHand>
-    constexpr auto operator*(const OtherUnitShortHand& other) const 
+    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+    constexpr auto operator*(const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other) const
     {
-        return UnitAdditionShortHand( this->Value * other.Value);
+        //Empty first prefix
+        return UNIT_ADDITION_SHORTHAND(,Other)( this->Value * other.Value);
     }
-    template <TemplateOtherUnitShortHand>
-    constexpr auto operator/( const OtherUnitShortHand& other )const
+    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+    constexpr auto operator/( const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other )const
     {
-        return UnitSubtractionShortHand( Value / other.Value );
+        return UNIT_SUBTRACTION_SHORTHAND(,Other)( Value / other.Value );
     }
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(First),PREFIXED_TEMPLATE_UNIT_SHORTHAND(Second)>
     constexpr auto operator*( const Vector<Unit<PREFIXED_UNIT_SHORTHAND(First)>,Unit<PREFIXED_UNIT_SHORTHAND(Second)>> Other )
     {
-        //When multlipying a unit scalar with a vector, thus s * v, we return v * s, since this is defined.
+        //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
         return Other * Value;
     }
     template<Arithmetic Scalar>
-    constexpr UnitShortHand operator*( Scalar& scalar ) const
+    constexpr TYPE_UNIT_SHORTHAND operator*( Scalar& scalar ) const
     {
         return { this->Value * scalar };
     }
 
     template<Arithmetic Scalar>
-    constexpr UnitShortHand operator/( Scalar& scalar ) const
+    constexpr TYPE_UNIT_SHORTHAND operator/( Scalar& scalar ) const
     {
         return { this->Value / scalar };
     }
@@ -143,13 +143,13 @@ struct Unit
     }
     inline void PrintUnitsVerbose() const
     {
-        constexpr bool Verbose = true;
-        std::cout<<GetUnitsToString<Verbose>();
+        constexpr bool isVerbose = true;
+        std::cout<<GetUnitsToString<isVerbose>();
     }
     inline void PrintUnits() const
     {
-        constexpr bool Verbose = false;
-        std::cout<<GetUnitsToString<Verbose>();
+        constexpr bool isVerbose = false;
+        std::cout<<GetUnitsToString<isVerbose>();
     }
     template<bool isVerbose>
     constexpr std::string GetUnitsToString() const 
