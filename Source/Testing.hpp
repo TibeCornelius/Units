@@ -26,6 +26,7 @@ struct T3
 };*/
 
 
+
 template <typename Unit1, typename Unit2>
 struct TResultingUnit;
 
@@ -55,7 +56,7 @@ struct TV
     Unit2 y;
 
     template<typename Multiplier>
-    inline auto operator*( const Multiplier& scalar )
+    inline auto operator*( const Multiplier& scalar ) const
     {
         using ResultingUnit1 = typename TResultingUnit<Unit1,Multiplier>::type;
         using ResultingUnit2 = typename TResultingUnit<Unit2,Multiplier>::type;
