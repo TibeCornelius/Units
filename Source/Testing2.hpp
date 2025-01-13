@@ -102,7 +102,13 @@ template <TEMPLATE_UNIT_SHORTHAND>
 struct Unit
 {
     double Value;
-
+    Unit() : Value(0.0) {}
+    Unit( double value ) : Value(value) {}
+    inline TYPE_UNIT_SHORTHAND operator=( double value )
+    {
+        TYPE_UNIT_SHORTHAND Unit = { value };
+        return Unit;
+    }
     inline bool operator==( TYPE_UNIT_SHORTHAND& other ) const
     {
         return this->Value == other.Value;
@@ -243,10 +249,6 @@ struct Unit
 template<TEMPLATE_UNIT_SHORTHAND>
 struct is_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
 
-#define Meter Unit<1,0,0,0,0,0,0>
-#define Second Unit<0,1,0,0,0,0,0>
-#define Velocity Unit<1,-1,0,0,0,0,0>
-
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
 struct Vector
@@ -364,5 +366,13 @@ struct Vector
             return { Value1 - Value2 };
         }
 };
+
+
+
+#pragma region  UnitMacros
+    #define Meter Unit<1,0,0,0,0,0,0>
+    #define Second Unit<0,1,0,0,0,0,0>
+    #define Velocity Unit<1,-1,0,0,0,0,0>
+#pragma endregion
 
 #define CreateVector(x,y) Vector<decltype(x),decltype(y)>::Create(x,y)

@@ -44,4 +44,6 @@ int main()
     auto vect = CreateVector( m1, m2 );
     auto Vect2 = CreateVector( m2, m1 );
     auto DotProductR = vect * Vect2;
+
+    Meter m3 = 5;
 }
