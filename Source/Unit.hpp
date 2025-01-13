@@ -98,6 +98,7 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
     using type = TYPE_UNIT_SHORTHAND;
 };
 //Represents the exponents of each unit
+//Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
 template <TEMPLATE_UNIT_SHORTHAND>
 struct Unit
 {
@@ -369,9 +370,27 @@ struct Vector
 
 
 
+
 #pragma region  UnitMacros
     #define Meter Unit<1,0,0,0,0,0,0>
-    #define Second Unit<0,1,0,0,0,0,0>
+    #define SquareMeter Unit<2,0,0,0,0,0,0>
+    #define Area Unit<2,0,0,0,0,0,0>
+    
+    #define CubeMeter Unit<3,0,0,0,0,0,0>
+    #define Volum Unit<3,0,0,0,0,0,0>
+    
+    #define Seconds Unit<0,1,0,0,0,0,0>
+    
+    #define Kilogram Unit<0,0,1,0,0,0,0>
+
+    #define Ampere Unit<0,0,0,1,0,0,0>
+
+    #define Kelvin Unit<0,0,0,0,1,0,0>
+
+    #define Mol Unit<0,0,0,0,1,0,0>
+
+    #define Candela Unit<0,0,0,0,1,0,0>
+
     #define Velocity Unit<1,-1,0,0,0,0,0>
 #pragma endregion
 
