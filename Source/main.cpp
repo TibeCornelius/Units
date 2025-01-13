@@ -39,31 +39,9 @@ void Test1()
 
 int main()
 {
-    Meter meter = {5};
-    Meter m2 = {3};
-
-    auto result = meter * m2;
-
-    Vector<Meter, Meter> v1 = {{5}, {3}};
-    v1.PrintVerbose();
-    Vector<int, int> v2 = {5,7};
-    v2.PrintVerbose();
-
-
-    Unit<3,5,-2,3,-2,1,0> something = {4};
-    something.PrintUnits();
-    something.PrintUnitsVerbose();
-
-    auto Vect1 = CreateVector( meter, m2 );
-    auto Vect2 = CreateVector( m2, meter );
-
-    auto V_Result = Vect1 + Vect2;
-    
-    V_Result.Print();
-
-    auto VOther = Vect1 * 5;
-
-    auto VL = meter * Vect1;
-
-    VOther.Print();
+    Meter m1 = {5};
+    Meter m2 = { 10 };
+    auto vect = CreateVector( m1, m2 );
+    auto Vect2 = CreateVector( m2, m1 );
+    auto DotProductR = vect * Vect2;
 }

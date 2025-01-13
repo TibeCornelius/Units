@@ -1,8 +1,6 @@
 #include<concepts>
-//Set default value of is unit to false
 
-
-
+//Set default value of is_unit to false
 template<typename>
 struct is_unit : std::false_type {};
 
@@ -57,12 +55,21 @@ concept ArithemeticOrUnit = std::is_arithmetic_v<T> || is_unit_v<T>;
 template<typename T>
 concept isUnit = is_unit_v<T>;
 
+template <typename x, typename y>
+concept VectorHasArithmeticOrUnitBase = (std::is_arithmetic_v<x> && std::is_arithmetic_v<y>)
+    || ( isUnit<x> && isUnit<y> );
+
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
+requires VectorHasArithmeticOrUnitBase<xType, yType>
 struct Vector;//Forward declaration
 
+template <typename T1, typename T2>
+concept SameType = std::is_same_v<T1, T2>;
 
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingMultlipicationUnit;
+
+
 
 template <TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
 struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
@@ -76,22 +83,58 @@ struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,Type2>
     using type = TYPE_UNIT_SHORTHAND;
 };
 
+template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
+struct ResultingDivisionUnit;
+
+template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
+{
+    using type = UNIT_SUBTRACTION_SHORTHAND(,Other);
+};
+
+template<TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
+struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
+{
+    using type = TYPE_UNIT_SHORTHAND;
+};
 //Represents the exponents of each unit
 template <TEMPLATE_UNIT_SHORTHAND>
 struct Unit
 {
     double Value;
 
-    inline TYPE_UNIT_SHORTHAND operator+( TYPE_UNIT_SHORTHAND& Other )
+    inline bool operator==( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value == other.Value;
+    }
+    inline bool operator!=( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value != other.Value;
+    }
+    inline bool operator>=( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value >= other.Value;
+    }
+    inline bool operator<=( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value <= other.Value;
+    }
+    inline bool operator<( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value < other.Value;
+    }
+    inline bool operator>( TYPE_UNIT_SHORTHAND& other ) const
+    {
+        return this->Value > other.Value;
+    }
+    inline TYPE_UNIT_SHORTHAND operator+( TYPE_UNIT_SHORTHAND& Other ) const
     {
         return { this->Value + Other.Value };
     }
-
-    inline TYPE_UNIT_SHORTHAND operator-( TYPE_UNIT_SHORTHAND& other )
+    inline TYPE_UNIT_SHORTHAND operator-( TYPE_UNIT_SHORTHAND& other ) const
     {
         return { this->Value - other.Value };
     }
-
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
     constexpr auto operator*(const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other) const
     {
@@ -101,26 +144,25 @@ struct Unit
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
     constexpr auto operator/( const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other )const
     {
+        //Empty first prefix
         return UNIT_SUBTRACTION_SHORTHAND(,Other)( Value / other.Value );
-    }
-    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(First),PREFIXED_TEMPLATE_UNIT_SHORTHAND(Second)>
-    constexpr auto operator*( const Vector<Unit<PREFIXED_UNIT_SHORTHAND(First)>,Unit<PREFIXED_UNIT_SHORTHAND(Second)>> Other )
-    {
-        //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
-        return Other * Value;
     }
     template<Arithmetic Scalar>
     constexpr TYPE_UNIT_SHORTHAND operator*( Scalar& scalar ) const
     {
         return { this->Value * scalar };
     }
-
     template<Arithmetic Scalar>
     constexpr TYPE_UNIT_SHORTHAND operator/( Scalar& scalar ) const
     {
         return { this->Value / scalar };
     }
-
+    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(First),PREFIXED_TEMPLATE_UNIT_SHORTHAND(Second)>
+    constexpr auto operator*( const Vector<TYPE_PREFIXED_UNIT_SHORTHAND(First),TYPE_PREFIXED_UNIT_SHORTHAND(Second)> Other )
+    {
+        //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
+        return Other * Value;
+    }
     template<bool isVerbose>
     static constexpr std::array<const char*,7> GetUnitNames()
     {
@@ -129,17 +171,6 @@ struct Unit
             return {"Meters", "Seconds", "Kilograms", "Amperes", "Kelvin", "Mol", "Candela"};
         }
         return {"m", "s", "kg", "A", "K", "mol", "cd"};
-    }
-
-    inline void PrintType() const
-    {
-        std::cout << "Units"<< " [Meters^" << Meters
-            << " Seconds^" << Seconds
-            << " Kilograms^" << Kilogram
-            << " Amperes^" << Ampere
-            << " Kelvin^" << Kelvin
-            << " Mol^" << Mol
-            << " Candela^" << Candela << "]\n";
     }
     inline void PrintUnitsVerbose() const
     {
@@ -177,6 +208,8 @@ struct Unit
                 ThereAreNegativeExponents = true;
             }
         }
+        //Remove last * sign
+        result.pop_back();
 
         if( ThereAreNegativeExponents )
         {
@@ -195,30 +228,27 @@ struct Unit
                     result += "*";
                 }
             }
+            //Remove last * sign
+            result.pop_back();
         }
 
-       
 
         if (result == "Units: ") result += "1"; // If no units are present
         result += "\n"; 
         return result;
     }
-
 };
 
 //Flag unit struct as is_unit true
-template<int Meters, int Seconds, int Kilograms, int Amperes, int Kelvin, int Mol, int Candela>
-struct is_unit<Unit<Meters, Seconds, Kilograms, Amperes, Kelvin, Mol, Candela>> : std::true_type {};
-
-
+template<TEMPLATE_UNIT_SHORTHAND>
+struct is_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
 
 #define Meter Unit<1,0,0,0,0,0,0>
 #define Second Unit<0,1,0,0,0,0,0>
 #define Velocity Unit<1,-1,0,0,0,0,0>
 
-
-
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
+requires VectorHasArithmeticOrUnitBase<xType, yType>
 struct Vector
 {
     public:
@@ -240,6 +270,7 @@ struct Vector
                 std::cout<<"y --> ";
                 y.PrintUnitsVerbose();
             }
+            std::cout<<"\n\n";
         }
         void Print()
         {
@@ -256,7 +287,9 @@ struct Vector
                 std::cout<<"y --> ";
                 y.PrintUnits();
             }
+            std::cout<<"\n\n";
         }
+        
         
         inline Vector<xType,yType> operator+( const Vector<xType,yType>& V_other ) const
         {
@@ -265,15 +298,42 @@ struct Vector
             Created.y = AddValues<yType>( y, V_other.y );
             return Created;
         }
-
+        inline Vector<xType,yType> operator-( const Vector<xType,yType>& V_other ) const
+        {
+            Vector<xType,yType> Created;
+            Created.x = SubtractValues<xType>( x, V_other.x );
+            Created.y = SubtractValues<yType>( y, V_other.y );
+            return Created;
+        }
+        //Dot product is only define between vectors with the same units
+        template <typename T = xType>
+        requires std::is_same_v<xType, yType>
+        inline T operator*( const Vector<T,T>& V_other )
+        {
+            if constexpr( std::is_arithmetic_v<T> )
+            {
+                return x * V_other.x + y * V_other.y;
+            }
+            T Result = {x.Value * V_other.x.Value + y.Value * V_other.y.Value};
+            return Result;
+        }
         template<ArithemeticOrUnit Multiplier>
-        inline auto operator*( const Multiplier& scalar ) const
+        inline auto operator*( const Multiplier& scalarMultlipier ) const
         {
             using Resulting_x_unit = typename ResultingMultlipicationUnit<xType,Multiplier>::type;
             using Resulting_y_unit = typename ResultingMultlipicationUnit<yType,Multiplier>::type;
 
-            Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x * scalar, y * scalar }; 
+            Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x * scalarMultlipier, y * scalarMultlipier }; 
             return ResultingVector ;
+        }
+        template<ArithemeticOrUnit Divider>
+        inline auto operator/( const Divider& scalarDivider ) const
+        {
+            using Resulting_x_unit = typename ResultingDivisionUnit<xType,Divider>::type;
+            using Resulting_y_unit = typename ResultingDivisionUnit<yType,Divider>::type;
+
+            Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x / scalarDivider, y / scalarDivider };
+            return ResultingVector;
         }
         
         static Vector<xType,yType> Create( xType myX, yType myY )
