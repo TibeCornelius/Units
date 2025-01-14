@@ -1,3 +1,20 @@
+
+/*
+ * This file is part of Unitree.
+ *
+ * Unitree is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Unitree is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Unitree. If not, see <https://www.gnu.org/licenses/>.
+ */
 #include<concepts>
 #include<iostream>
 
@@ -5,9 +22,7 @@
 template<typename>
 struct is_unit : std::false_type {};
 
-#define TEMPLATE_UNIT_SHORTHAND int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela
-#define UNIT_SHORTHAND Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
-#define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
+
 
 #define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) int PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
@@ -30,27 +45,32 @@ struct is_unit : std::false_type {};
     PREFIX_UNIT(PREFIX, Kelvin), \
     PREFIX_UNIT(PREFIX, Mol), \
     PREFIX_UNIT(PREFIX, Candela)
-#define TYPE_PREFIXED_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
 
-#define PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
+#define TEMPLATE_UNIT_SHORTHAND int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela
+#define UNIT_SHORTHAND Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
+#define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
+
+#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
+
+#define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
 
 
-#define MATRIX_2X2_TEMPLATE_UNITSHORTHAND \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2) \
+#define TEMPLATE_MATRIX_2X2_UNIT_SHORTHAND \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2) \
 
-#define MATRIX_3X3_TEMPLATE_UNITSHORTHAND \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_3), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_3), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_1), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_2), \
-    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_3) \
+#define TEMPLATE_MATRIX_3X3_UNITSHORTHAND \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_3), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_3), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_1), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_2), \
+    PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_3) \
 
 #define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) int PREFIX_1##Meters,int PREFIX_1##Seconds, int PREFIX_1##Kilogram, int PREFIX_1##Ampere, int PREFIX_1##Kelvin, int PREFIX_1##Mol, int PREFIX_1##Candela,int PREFIX_2##Meters, int PREFIX_2##Seconds, int PREFIX_2##Kilogram, int PREFIX_2##Ampere, int PREFIX_2##Kelvin,int PREFIX_2##Mol, int PREFIX_2##Candela
 
@@ -97,7 +117,7 @@ struct ResultingMultlipicationUnit;
 
 
 template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
-struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
+struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
 {   
     using type = UNIT_ADDITION_SHORTHAND(,Other);
 };
@@ -112,7 +132,7 @@ template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingDivisionUnit;
 
 template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
-struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
+struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
 {
     using type = UNIT_SUBTRACTION_SHORTHAND(,Other);
 };
@@ -174,13 +194,13 @@ struct Unit
         return { this->Value - other.Value };
     }
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
-    constexpr auto operator*(const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other) const
+    constexpr auto operator*(const PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other) const
     {
         //Empty first prefix
         return UNIT_ADDITION_SHORTHAND(,Other)( this->Value * other.Value);
     }
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
-    constexpr auto operator/( const TYPE_PREFIXED_UNIT_SHORTHAND(Other)& other )const
+    constexpr auto operator/( const PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other )const
     {
         //Empty first prefix
         return UNIT_SUBTRACTION_SHORTHAND(,Other)( Value / other.Value );
@@ -196,7 +216,7 @@ struct Unit
         return { this->Value / scalar };
     }
     template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(First),PREFIXED_TEMPLATE_UNIT_SHORTHAND(Second)>
-    constexpr auto operator*( const Vector<TYPE_PREFIXED_UNIT_SHORTHAND(First),TYPE_PREFIXED_UNIT_SHORTHAND(Second)> Other )
+    constexpr auto operator*( const Vector<PREFIXED_TYPE_UNIT_SHORTHAND(First),PREFIXED_TYPE_UNIT_SHORTHAND(Second)> Other )
     {
         //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
         return Other * Value;
@@ -504,7 +524,7 @@ constexpr auto CreateAngledVector2X2Vector( const UnitType& magnitude, const Ang
 
 
 
-template<MATRIX_2X2_TEMPLATE_UNITSHORTHAND>
+template<TEMPLATE_MATRIX_2X2_UNIT_SHORTHAND>
 struct Matrix2X2
 {
     a_1Type a_1; b_1Type b_1;
@@ -513,7 +533,7 @@ struct Matrix2X2
     
 };
 
-template<MATRIX_3X3_TEMPLATE_UNITSHORTHAND>
+template<TEMPLATE_MATRIX_3X3_UNITSHORTHAND>
 struct Matrix3X3
 {
     a_1Type a_1; b_1Type b_1; c_1Type c_1;
