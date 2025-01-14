@@ -1,4 +1,5 @@
 #include<concepts>
+#include<iostream>
 
 //Set default value of is_unit to false
 template<typename>
@@ -30,8 +31,26 @@ struct is_unit : std::false_type {};
     PREFIX_UNIT(PREFIX, Mol), \
     PREFIX_UNIT(PREFIX, Candela)
 #define TYPE_PREFIXED_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-    
 
+#define PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
+
+
+#define MATRIX_2X2_TEMPLATE_UNITSHORTHAND \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2) \
+
+#define MATRIX_3X3_TEMPLATE_UNITSHORTHAND \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_1), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_2), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(a_3), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_1), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_2), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(b_3), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_1), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_2), \
+    PREFIXED_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_3) \
 
 #define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) int PREFIX_1##Meters,int PREFIX_1##Seconds, int PREFIX_1##Kilogram, int PREFIX_1##Ampere, int PREFIX_1##Kelvin, int PREFIX_1##Mol, int PREFIX_1##Candela,int PREFIX_2##Meters, int PREFIX_2##Seconds, int PREFIX_2##Kilogram, int PREFIX_2##Ampere, int PREFIX_2##Kelvin,int PREFIX_2##Mol, int PREFIX_2##Candela
 
@@ -59,6 +78,12 @@ template <typename x, typename y>
 concept VectorHasArithmeticOrUnitBase = (std::is_arithmetic_v<x> && std::is_arithmetic_v<y>)
     || ( isUnit<x> && isUnit<y> );
 
+template<typename T>
+concept isScalarUnit = std::is_same_v<T, Unit<0, 0, 0, 0, 0, 0, 0>>;
+
+template <typename T>
+concept ArithemeticOrScalarUnit = std::is_arithmetic_v<T> || isScalarUnit<T>;
+
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
 struct Vector;//Forward declaration
@@ -71,13 +96,13 @@ struct ResultingMultlipicationUnit;
 
 
 
-template <TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
 struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_PREFIXED_UNIT_SHORTHAND(Other)>
 {   
     using type = UNIT_ADDITION_SHORTHAND(,Other);
 };
 
-template <TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
+template<TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
 struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
@@ -105,6 +130,12 @@ struct Unit
     double Value;
     Unit() : Value(0.0) {}
     Unit( double value ) : Value(value) {}
+#pragma region Unit operators 
+    //Implicit double conversion
+    operator double()const
+    {
+        return Value;
+    }
     inline TYPE_UNIT_SHORTHAND operator=( double value )
     {
         TYPE_UNIT_SHORTHAND Unit = { value };
@@ -171,6 +202,7 @@ struct Unit
         return Other * Value;
     }
     template<bool isVerbose>
+#pragma endregion
     static constexpr std::array<const char*,7> GetUnitNames()
     {
         if constexpr( isVerbose )
@@ -246,13 +278,79 @@ struct Unit
     }
 };
 
+#pragma region  UnitMacros
+    using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
+    using Radian = Scalar;
+
+    using Meter = Unit<1, 0, 0, 0, 0, 0, 0>;
+    using Meter2 = Unit<1, 0, 0, 0, 0, 0, 0>;
+    using SquareMeter = Unit<2, 0, 0, 0, 0, 0, 0>;
+    using Area = SquareMeter;
+    using CubeMeter = Unit<3, 0, 0, 0, 0, 0, 0>;
+    using Volume = CubeMeter;
+
+    using Seconds = Unit<0, 1, 0, 0, 0, 0, 0>;
+    using Hertz = Unit<0, -1, 0, 0, 0, 0, 0>;
+
+    using Kilogram = Unit<0, 0, 1, 0, 0, 0, 0>;
+
+    using Ampere = Unit<0, 0, 0, 1, 0, 0, 0>;
+
+    using Kelvin = Unit<0, 0, 0, 0, 1, 0, 0>;
+
+    using Mol = Unit<0, 0, 0, 0, 0, 1, 0>;
+
+    using Candela = Unit<0, 0, 0, 0, 0, 0, 1>;
+
+    using Velocity = Unit<1, -1, 0, 0, 0, 0, 0>;
+    using Acceleration = Unit<1, -2, 0, 0, 0, 0, 0>;
+    using Jerk = Unit<1, -3, 0, 0, 0, 0, 0>;
+
+    using Newton = Unit<1,-2,1,0,0,0,0>;
+    using Force = Newton;
+
+    using Work = Unit<2,-2,1,0,0,0,0>;
+    using Torque = Work;
+
+    using Watt = Unit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
+    using Pascal = Unit<-1, -2, 1, 0, 0, 0, 0>; 
+
+    using Coulomb = Unit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
+    using Volt = Unit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
+    using Ohm = Unit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
+    using Siemens = Unit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
+    using Farad = Unit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
+    using Henry = Unit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
+    using Weber = Unit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
+    using Tesla = Unit<0, -2, 1, -1, 0, 0, 0>;
+
+    using Entropy = Unit<2, -2, 1, 0, -1, 0, 0>; // J/K
+    using SpecificHeatCapacity = Unit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
+    using StefanBoltzmannConstant = Unit<0, -3, 1, 0, -4, 0, 0>;
+
+    using Concentration = Unit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
+    using CatalyticActivity = Unit<0, -1, 0, 0, 0, 1, 0>; // mol/s
+
+    using Lumen = Unit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
+    using Lux = Unit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
+
+    using AngularVelocity = Unit<0, -1, 0, 0, 0, 0, 0>; // rad/s
+    using AngularAcceleration = Unit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
+    using Impulse = Unit<1, -1, 1, 0, 0, 0, 0>; // N·s
+    using Momentum = Unit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s
+
+#pragma endregion
+#pragma region Physical constants
+    const Radian Pi =   3.14159265358979323846;
+#pragma endregion
+
 //Flag unit struct as is_unit true
 template<TEMPLATE_UNIT_SHORTHAND>
 struct is_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
-struct Vector
+struct Vector2X2
 {
     public:
         xType x;
@@ -343,6 +441,26 @@ struct Vector
         {
             return { myX, myY };
         }
+        inline auto GetAngleXaxis()
+        {
+            if constexpr( std::is_arithmetic_v<xType> )
+            {
+                return std::atan(y,x);
+            }
+
+            Radian angle = std::atan2(y,x);
+            return angle;
+        }
+        inline auto GetAngleYaxis()
+        {
+            if constexpr( std::is_arithmetic_v<xType> )
+            {
+                return std::atan(x,y);
+            }
+
+            Radian angle = std::atan2(x,y);
+            return angle;
+        }
     private:
         template<ArithemeticOrUnit T>
         constexpr T AddValues( T Value1, T Value2) const
@@ -367,31 +485,43 @@ struct Vector
             return { Value1 - Value2 };
         }
 };
+#define mCreateVector2X2(x,y) Vector<decltype(x),decltype(y)>::CreateVector2X2(x,y)
+
+//Helper function to deduce template types
+//outside of vector struct to not have to specify type 
+template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
+requires VectorHasArithmeticOrUnitBase<xType, yType>
+constexpr auto CreateVector2X2(const xType& x, const yType& y) { return Vector2X2<xType, yType>(x, y); }
+
+template<ArithemeticOrUnit UnitType, ArithemeticOrScalarUnit AngleType>
+constexpr auto CreateAngledVector2X2Vector( const UnitType& magnitude, const AngleType& angle )
+{
+    UnitType x = magnitude * std::cos( angle );
+    UnitType y = magnitude * std::sin( angle );
+    auto Created = CreateVector2X2( x, y );
+    return Created;
+}
 
 
 
+template<MATRIX_2X2_TEMPLATE_UNITSHORTHAND>
+struct Matrix2X2
+{
+    a_1Type a_1; b_1Type b_1;
+    a_2Type a_2; b_2Type b_2;
 
-#pragma region  UnitMacros
-    #define Meter Unit<1,0,0,0,0,0,0>
-    #define SquareMeter Unit<2,0,0,0,0,0,0>
-    #define Area Unit<2,0,0,0,0,0,0>
     
-    #define CubeMeter Unit<3,0,0,0,0,0,0>
-    #define Volum Unit<3,0,0,0,0,0,0>
-    
-    #define Seconds Unit<0,1,0,0,0,0,0>
-    
-    #define Kilogram Unit<0,0,1,0,0,0,0>
+};
 
-    #define Ampere Unit<0,0,0,1,0,0,0>
+template<MATRIX_3X3_TEMPLATE_UNITSHORTHAND>
+struct Matrix3X3
+{
+    a_1Type a_1; b_1Type b_1; c_1Type c_1;
+    a_2Type a_2; b_2Type b_2; c_2Type c_2;
+    a_3Type a_3; b_3Type b_3; c_3Type c_3;  
+};
 
-    #define Kelvin Unit<0,0,0,0,1,0,0>
 
-    #define Mol Unit<0,0,0,0,1,0,0>
 
-    #define Candela Unit<0,0,0,0,1,0,0>
 
-    #define Velocity Unit<1,-1,0,0,0,0,0>
-#pragma endregion
 
-#define CreateVector(x,y) Vector<decltype(x),decltype(y)>::Create(x,y)
