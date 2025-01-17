@@ -6,14 +6,14 @@
 struct Rational
 {
     int Numerator;
-    int Denominator;
+    uint Denominator;
 
     static constexpr Rational Zero() 
     {
         return Rational{0, 1};
     }
     constexpr Rational():Numerator(0), Denominator(1){}
-    constexpr Rational( int numerator, int denominator ): Numerator( numerator ), Denominator( denominator ) {}
+    constexpr Rational( int numerator, uint denominator ): Numerator( numerator ), Denominator( denominator ) {}
     constexpr Rational( int value ): Numerator( value ), Denominator( 1 ){}
 #pragma region Rational operators
     Rational operator+( Rational other ) const
@@ -100,11 +100,11 @@ struct Rational
     }
     static void set_common_denominator( Rational& rational_1, Rational& rational_2 )
     {
-        int denominator_2 = rational_2.Denominator;
-        Rational unit = { rational_1.Denominator, rational_1.Denominator };
+        uint denominator_2 = rational_2.Denominator;
+        Rational unit = { static_cast<int>(rational_1.Denominator), rational_1.Denominator };
 
         rational_2 = multliply_without_simplifying( rational_2, unit );
-        unit = { denominator_2, denominator_2 };
+        unit = { static_cast<int>(denominator_2), denominator_2 };
         rational_1 = multliply_without_simplifying( rational_1, unit );
     }
     static Rational multliply_without_simplifying(const Rational& first, const Rational& second)
@@ -113,11 +113,13 @@ struct Rational
         Rational Result = { first.Numerator * second.Numerator, first.Denominator * second.Denominator };
         return Result;
     }
-    Rational get_inverse()
+    constexpr Rational get_inverse()
     {
-        return { Denominator, Numerator };
-    }
-    
+        bool isNegative = Numerator < 0 ;
+        int NewNumerator = isNegative ? -Denominator : Denominator;
+        uint NewDenominator = std::abs( Numerator ); 
+        return { NewNumerator, NewDenominator };
+    }  
     void simplify_fraction()
     {
         int gcd = std::gcd(Numerator, Denominator);

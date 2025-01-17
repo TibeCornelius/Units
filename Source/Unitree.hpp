@@ -304,7 +304,7 @@ struct Unit
 };
 
 #pragma region  UnitMacros
-    /*using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
+    using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
     using Radian = Scalar;
 
     using Meter = Unit<1, 0, 0, 0, 0, 0, 0>;
@@ -474,7 +474,7 @@ struct Vector2X2
             }
             //Flagged
             //Should be radian
-            double angle = std::atan2(y,x);
+            Radian angle = std::atan2(y,x);
             return angle;
         }
         inline auto GetAngleYaxis()
@@ -485,7 +485,7 @@ struct Vector2X2
             }
             //Flagged
             //Should be radian
-            double angle = std::atan2(x,y);
+            Radian angle = std::atan2(x,y);
             return angle;
         }
     private:
