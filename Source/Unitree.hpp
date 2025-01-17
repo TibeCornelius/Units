@@ -23,10 +23,9 @@ template<typename>
 struct is_unit : std::false_type {};
 
 
-
+#pragma region Macros
 #define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) int PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
-
 
 #define PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX) \
     PREFIX_TEMPLATE_UNIT(PREFIX, Meters), \
@@ -46,11 +45,13 @@ struct is_unit : std::false_type {};
     PREFIX_UNIT(PREFIX, Mol), \
     PREFIX_UNIT(PREFIX, Candela)
 
-#define TEMPLATE_UNIT_SHORTHAND int Meters,int Seconds, int Kilogram, int Ampere, int Kelvin, int Mol, int Candela
-#define UNIT_SHORTHAND Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
+#define TEMPLATE_UNIT_SHORTHAND PREFIXED_TEMPLATE_UNIT_SHORTHAND()
+#define UNIT_SHORTHAND PREFIXED_UNIT_SHORTHAND()
 #define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
 
 #define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
+#define ScalarUnit Unit<0, 0, 0, 0, 0, 0, 0>
+
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
 
@@ -72,12 +73,12 @@ struct is_unit : std::false_type {};
     PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_2), \
     PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_3) \
 
-#define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) int PREFIX_1##Meters,int PREFIX_1##Seconds, int PREFIX_1##Kilogram, int PREFIX_1##Ampere, int PREFIX_1##Kelvin, int PREFIX_1##Mol, int PREFIX_1##Candela,int PREFIX_2##Meters, int PREFIX_2##Seconds, int PREFIX_2##Kilogram, int PREFIX_2##Ampere, int PREFIX_2##Kelvin,int PREFIX_2##Mol, int PREFIX_2##Candela
+#define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX_1) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX2)
 
 #define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) Unit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
 #define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) Unit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
-
-
+#pragma endregion
+#pragma region Concepts and forward declarations
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
@@ -99,7 +100,7 @@ concept VectorHasArithmeticOrUnitBase = (std::is_arithmetic_v<x> && std::is_arit
     || ( isUnit<x> && isUnit<y> );
 
 template<typename T>
-concept isScalarUnit = std::is_same_v<T, Unit<0, 0, 0, 0, 0, 0, 0>>;
+concept isScalarUnit = std::is_same_v<T, ScalarUnit>;
 
 template <typename T>
 concept ArithemeticOrScalarUnit = std::is_arithmetic_v<T> || isScalarUnit<T>;
@@ -113,8 +114,6 @@ concept SameType = std::is_same_v<T1, T2>;
 
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingMultlipicationUnit;
-
-
 
 template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
 struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
@@ -142,6 +141,10 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
 };
+#pragma endregion
+
+
+
 //Represents the exponents of each unit
 //Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
 template <TEMPLATE_UNIT_SHORTHAND>
