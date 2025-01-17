@@ -18,11 +18,10 @@
 #pragma once
 #include<concepts>
 #include<iostream>
-#include"Rational.hpp"
-
-//Set default value of is_unit to false
-template<typename>
-struct is_unit : std::false_type {};
+#include <tuple>
+#include <iostream>
+#include <ostream> 
+#include <numeric> 
 
 
 #pragma region Macros
@@ -80,7 +79,154 @@ struct is_unit : std::false_type {};
 #define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) Unit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
 #define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) Unit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
 #pragma endregion
+#pragma region Rational
+struct Rational
+{
+    int Numerator;
+    uint Denominator;
+
+    static constexpr Rational Zero() 
+    {
+        return Rational{0, 1};
+    }
+    constexpr Rational():Numerator(0), Denominator(1){}
+    constexpr Rational( int numerator, uint denominator ): Numerator( numerator ), Denominator( denominator ) {}
+    constexpr Rational( int value ): Numerator( value ), Denominator( 1 ){}
+#pragma region Rational operators
+    Rational operator+( Rational other ) const
+    {
+        Rational r1 = Rational(*this);
+
+        set_common_denominator(r1, other);
+        Rational Result = Rational( r1.Numerator + other.Numerator, r1.Denominator);
+        Result.simplify_fraction();
+        return Result;
+    }
+    Rational operator-( Rational other ) const
+    {
+        Rational r1 = Rational(*this);
+
+        set_common_denominator(r1, other);
+        Rational Result = Rational( r1.Numerator - other.Numerator, r1.Denominator );
+        Result.simplify_fraction();
+        return Result;
+    }    
+    Rational operator*( Rational& other ) const
+    {
+        Rational Result = { Numerator * other.Numerator, Denominator * other.Denominator };
+        return Result;
+    }
+    Rational operator/( Rational& other ) const
+    {// (a/b) / (c/d) = (a/b) * (d/c)
+        Rational OtherInverse = other.get_inverse();
+        return *this * OtherInverse; 
+    }
+    constexpr bool operator==( Rational& other )
+    {
+        if( Numerator == other.Numerator && Denominator == other.Denominator )
+        {
+            return true;
+        }
+        return false;
+    }
+    constexpr bool operator!=( Rational& other )
+    {
+        if( Numerator != other.Numerator || Denominator != other.Denominator )
+        {
+            return true;
+        }
+        return false;
+    }
+    constexpr bool operator>( Rational& other ) const
+    {
+        Rational rSelf = Rational(*this);
+
+        set_common_denominator( rSelf, other );
+        return rSelf.Numerator > other.Numerator;
+    }
+    constexpr bool operator<( Rational& other ) const
+    {
+        Rational rSelf = Rational(*this);
+
+        set_common_denominator( rSelf, other );
+        return rSelf.Numerator < other.Numerator;
+    }
+    constexpr bool operator!=( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf != rOther;
+    }
+    constexpr bool operator>( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf > rOther; 
+    }
+    constexpr bool operator<( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf < rOther;
+    }
+#pragma endregion
+    friend std::ostream& operator<<( std::ostream& stream, const Rational& rational )
+    {
+        stream <<rational.Numerator<<"/"<<rational.Denominator;
+        return stream;
+    }
+    static void set_common_denominator( Rational& rational_1, Rational& rational_2 )
+    {
+        uint denominator_2 = rational_2.Denominator;
+        Rational unit = { static_cast<int>(rational_1.Denominator), rational_1.Denominator };
+
+        rational_2 = multliply_without_simplifying( rational_2, unit );
+        unit = { static_cast<int>(denominator_2), denominator_2 };
+        rational_1 = multliply_without_simplifying( rational_1, unit );
+    }
+    static Rational multliply_without_simplifying(const Rational& first, const Rational& second)
+    {
+        // Perform multiplication and return the result as a new Rational
+        Rational Result = { first.Numerator * second.Numerator, first.Denominator * second.Denominator };
+        return Result;
+    }
+    constexpr Rational get_inverse()
+    {
+        bool isNegative = Numerator < 0 ? true : false;
+        int NewNumerator = isNegative ? -Denominator : Denominator;
+        uint NewDenominator = std::abs( Numerator ); 
+        return { NewNumerator, NewDenominator };
+    }  
+    void simplify_fraction()
+    {
+        int gcd = std::gcd(Numerator, Denominator);
+        Numerator /= gcd;
+        Denominator /= gcd;
+    }
+    void print()
+    {
+        std::cout<<Numerator<<"/"<<Denominator<<"\n";
+    }
+    constexpr std::string to_string() const
+    {
+        if( Denominator == 1 )
+        {
+            return std::to_string(Numerator);
+        }
+        return std::to_string(Numerator)+"/"+std::to_string(Denominator);
+    }
+    constexpr std::string to_string_absolute_value() const
+    {
+        Rational rSelf = { std::abs(Numerator), Denominator };
+        return rSelf.to_string();
+    }
+};
+#pragma endregion
 #pragma region Concepts and forward declarations
+//Set default value of is_unit to false
+template<typename>
+struct is_unit : std::false_type {};
+
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
@@ -228,7 +374,7 @@ struct Unit
     }
     template<bool isVerbose>
 #pragma endregion
-    static constexpr std::array<const char*,7> GetUnitNames()
+    static constexpr std::array<const char*,7> get_unit_names()
     {
         if constexpr( isVerbose )
         {
@@ -236,18 +382,18 @@ struct Unit
         }
         return {"m", "s", "kg", "A", "K", "mol", "cd"};
     }
-    inline void PrintUnitsVerbose() const
+    inline void print_units_verbose() const
     {
         constexpr bool isVerbose = true;
-        std::cout<<GetUnitsToString<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>();
     }
-    inline void PrintUnits() const
+    inline void print_units() const
     {
         constexpr bool isVerbose = false;
-        std::cout<<GetUnitsToString<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>();
     }
     template<bool isVerbose>
-    constexpr std::string GetUnitsToString() const 
+    constexpr std::string get_units_to_string() const 
     {
         constexpr std::array<Rational, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
         constexpr std::array<const char*, 7> unitNames = GetUnitNames<isVerbose>();
@@ -366,7 +512,7 @@ struct Unit
 
 #pragma endregion
 #pragma region Physical constants
-    //const Radian Pi =   3.14159265358979323846;
+    const Radian Pi =   3.14159265358979323846;
 #pragma endregion
 
 //Flag unit struct as is_unit true
@@ -381,7 +527,7 @@ struct Vector2X2
         xType x;
         yType y;
 
-        void PrintVerbose()
+        void print_verbose()
         {
             if constexpr ( std::is_arithmetic_v<xType> )
             {
@@ -398,7 +544,7 @@ struct Vector2X2
             }
             std::cout<<"\n\n";
         }
-        void Print()
+        void print()
         {
             if constexpr ( std::is_arithmetic_v<xType> )
             {
@@ -462,11 +608,11 @@ struct Vector2X2
             return ResultingVector;
         }
         
-        static Vector<xType,yType> Create( xType myX, yType myY )
+        static Vector<xType,yType> create( xType myX, yType myY )
         {
             return { myX, myY };
         }
-        inline auto GetAngleXaxis()
+        inline auto get_angle_x_axis()
         {
             if constexpr( std::is_arithmetic_v<xType> )
             {
@@ -477,7 +623,7 @@ struct Vector2X2
             Radian angle = std::atan2(y,x);
             return angle;
         }
-        inline auto GetAngleYaxis()
+        inline auto get_angle_y_axis()
         {
             if constexpr( std::is_arithmetic_v<xType> )
             {
@@ -490,7 +636,7 @@ struct Vector2X2
         }
     private:
         template<ArithemeticOrUnit T>
-        constexpr T AddValues( T Value1, T Value2) const
+        constexpr T add_values( T Value1, T Value2) const
         {
             //If not arithetic type we return it in a struct
             if constexpr( std::is_arithmetic_v<T> )
@@ -501,7 +647,7 @@ struct Vector2X2
             return { Value1 + Value2 };
         }
         template<ArithemeticOrUnit T>
-        constexpr T SubtractValues( T Value1, T Value2) const
+        constexpr T subtract_values( T Value1, T Value2) const
         {
             //If not arithetic type we return it in a struct
             if constexpr( std::is_arithmetic_v<T> )
@@ -518,16 +664,18 @@ struct Vector2X2
 //outside of vector struct to not have to specify type 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
-constexpr auto CreateVector2X2(const xType& x, const yType& y) { return Vector2X2<xType, yType>(x, y); }
+constexpr auto create_vector_2x2(const xType& x, const yType& y) { return Vector2X2<xType, yType>(x, y); }
 
 template<ArithemeticOrUnit UnitType, ArithemeticOrScalarUnit AngleType>
-constexpr auto CreateAngledVector2X2Vector( const UnitType& magnitude, const AngleType& angle )
+constexpr auto create_angled_vector_2x2( const UnitType& magnitude, const AngleType& angle )
 {
     UnitType x = magnitude * std::cos( angle );
     UnitType y = magnitude * std::sin( angle );
     auto Created = CreateVector2X2( x, y );
     return Created;
 }
+
+
 
 
 
