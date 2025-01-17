@@ -15,8 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Unitree. If not, see <https://www.gnu.org/licenses/>.
  */
+#pragma once
 #include<concepts>
 #include<iostream>
+#include"Rational.hpp"
 
 //Set default value of is_unit to false
 template<typename>
@@ -24,7 +26,7 @@ struct is_unit : std::false_type {};
 
 
 #pragma region Macros
-#define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) int PREFIX##UNIT
+#define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) Rational PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
 
 #define PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX) \
@@ -50,7 +52,7 @@ struct is_unit : std::false_type {};
 #define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
 
 #define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-#define ScalarUnit Unit<0, 0, 0, 0, 0, 0, 0>
+#define ScalarUnit Unit<Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero()>
 
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
@@ -247,7 +249,7 @@ struct Unit
     template<bool isVerbose>
     constexpr std::string GetUnitsToString() const 
     {
-        constexpr std::array<int, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
+        constexpr std::array<Rational, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
         constexpr std::array<const char*, 7> unitNames = GetUnitNames<isVerbose>();
 
         std::string result = "Units: "+ std::to_string(Value) + " ";
@@ -259,9 +261,9 @@ struct Unit
             if (exponents[i] > 0) 
             {
                 result += std::string(unitNames[i]);
-                if (exponents[i] != 1)
+                if (exponents[i] != 1 )
                 {
-                    result += "^" + std::to_string(exponents[i]);
+                    result += "^" + exponents[i].to_string();
                 }
                 result += "*";
             }
@@ -285,7 +287,7 @@ struct Unit
                     if (exponents[i] != -1) 
                     {
                         //Make negetive exponent positive since we are already dividing
-                        result += "^" + std::to_string(-exponents[i]);
+                        result += "^" + exponents[i].to_string_absolute_value();
                     }
                     result += "*";
                 }
@@ -302,7 +304,7 @@ struct Unit
 };
 
 #pragma region  UnitMacros
-    using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
+    /*using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
     using Radian = Scalar;
 
     using Meter = Unit<1, 0, 0, 0, 0, 0, 0>;
@@ -360,11 +362,11 @@ struct Unit
     using AngularVelocity = Unit<0, -1, 0, 0, 0, 0, 0>; // rad/s
     using AngularAcceleration = Unit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
     using Impulse = Unit<1, -1, 1, 0, 0, 0, 0>; // N·s
-    using Momentum = Unit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s
+    using Momentum = Unit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s*/
 
 #pragma endregion
 #pragma region Physical constants
-    const Radian Pi =   3.14159265358979323846;
+    //const Radian Pi =   3.14159265358979323846;
 #pragma endregion
 
 //Flag unit struct as is_unit true
@@ -470,8 +472,9 @@ struct Vector2X2
             {
                 return std::atan(y,x);
             }
-
-            Radian angle = std::atan2(y,x);
+            //Flagged
+            //Should be radian
+            double angle = std::atan2(y,x);
             return angle;
         }
         inline auto GetAngleYaxis()
@@ -480,8 +483,9 @@ struct Vector2X2
             {
                 return std::atan(x,y);
             }
-
-            Radian angle = std::atan2(x,y);
+            //Flagged
+            //Should be radian
+            double angle = std::atan2(x,y);
             return angle;
         }
     private:

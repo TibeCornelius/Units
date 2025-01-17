@@ -1,3 +1,4 @@
+#pragma once
 #include <tuple>
 #include <iostream>
 #include <ostream> 
@@ -6,10 +7,16 @@ struct Rational
 {
     int Numerator;
     int Denominator;
-    Rational(){}//Default constructor, don't remove
-    Rational( int numerator, int denominator ): Numerator( numerator ), Denominator( denominator ) {}
-    //We dont pass by reference since we will change the fraction
-    Rational operator+( Rational other )
+
+    static constexpr Rational Zero() 
+    {
+        return Rational{0, 1};
+    }
+    constexpr Rational():Numerator(0), Denominator(1){}
+    constexpr Rational( int numerator, int denominator ): Numerator( numerator ), Denominator( denominator ) {}
+    constexpr Rational( int value ): Numerator( value ), Denominator( 1 ){}
+#pragma region Rational operators
+    Rational operator+( Rational other ) const
     {
         Rational r1 = Rational(*this);
 
@@ -18,7 +25,7 @@ struct Rational
         Result.simplify_fraction();
         return Result;
     }
-    Rational operator-( Rational other )
+    Rational operator-( Rational other ) const
     {
         Rational r1 = Rational(*this);
 
@@ -27,17 +34,17 @@ struct Rational
         Result.simplify_fraction();
         return Result;
     }    
-    Rational operator*( Rational& other )
+    Rational operator*( Rational& other ) const
     {
         Rational Result = { Numerator * other.Numerator, Denominator * other.Denominator };
         return Result;
     }
-    Rational operator/( Rational& other )
+    Rational operator/( Rational& other ) const
     {// (a/b) / (c/d) = (a/b) * (d/c)
         Rational OtherInverse = other.get_inverse();
         return *this * OtherInverse; 
     }
-    bool operator==( Rational& other )
+    constexpr bool operator==( Rational& other )
     {
         if( Numerator == other.Numerator && Denominator == other.Denominator )
         {
@@ -45,7 +52,7 @@ struct Rational
         }
         return false;
     }
-    bool operator!=( Rational& other )
+    constexpr bool operator!=( Rational& other )
     {
         if( Numerator != other.Numerator || Denominator != other.Denominator )
         {
@@ -53,6 +60,39 @@ struct Rational
         }
         return false;
     }
+    constexpr bool operator>( Rational& other ) const
+    {
+        Rational rSelf = Rational(*this);
+
+        set_common_denominator( rSelf, other );
+        return rSelf.Numerator > other.Numerator;
+    }
+    constexpr bool operator<( Rational& other ) const
+    {
+        Rational rSelf = Rational(*this);
+
+        set_common_denominator( rSelf, other );
+        return rSelf.Numerator < other.Numerator;
+    }
+    constexpr bool operator!=( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf != rOther;
+    }
+    constexpr bool operator>( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf > rOther; 
+    }
+    constexpr bool operator<( int other ) const
+    {
+        Rational rSelf = Rational(*this);
+        Rational rOther = Rational(other);
+        return rSelf < rOther;
+    }
+#pragma endregion
     friend std::ostream& operator<<( std::ostream& stream, const Rational& rational )
     {
         stream <<rational.Numerator<<"/"<<rational.Denominator;
@@ -87,6 +127,19 @@ struct Rational
     void print()
     {
         std::cout<<Numerator<<"/"<<Denominator<<"\n";
+    }
+    constexpr std::string to_string() const
+    {
+        if( Denominator == 1 )
+        {
+            return std::to_string(Numerator);
+        }
+        return std::to_string(Numerator)+"/"+std::to_string(Denominator);
+    }
+    constexpr std::string to_string_absolute_value() const
+    {
+        Rational rSelf = { std::abs(Numerator), Denominator };
+        return rSelf.to_string();
     }
 };
 
