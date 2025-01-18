@@ -1,6 +1,7 @@
 #include<iostream>
 #include "Unitree.hpp"
 
+using namespace Unit;
 int main()
 {
     Scalar s = 5;

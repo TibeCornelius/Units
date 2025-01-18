@@ -48,10 +48,10 @@
 
 #define TEMPLATE_UNIT_SHORTHAND PREFIXED_TEMPLATE_UNIT_SHORTHAND()
 #define UNIT_SHORTHAND PREFIXED_UNIT_SHORTHAND()
-#define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
+#define TYPE_UNIT_SHORTHAND TypeUnit<UNIT_SHORTHAND>
 
-#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-#define ScalarUnit Unit<Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero()>
+#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) TypeUnit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
+#define ScalarUnit TypeUnit<Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero()>
 
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
@@ -76,8 +76,8 @@
 
 #define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX_1) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX2)
 
-#define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) Unit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
-#define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) Unit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
+#define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) TypeUnit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
+#define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) TypeUnit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
 #pragma endregion
 #pragma region Rational
 struct Rational
@@ -223,18 +223,24 @@ struct Rational
 };
 #pragma endregion
 #pragma region Concepts and forward declarations
-//Set default value of is_unit to false
+template<TEMPLATE_UNIT_SHORTHAND>
+struct TypeUnit;//Forward declaration
+
+//Set default value of is_type_unit to false
 template<typename>
-struct is_unit : std::false_type {};
+struct is_type_unit : std::false_type {};
 
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
+
+
+//Flag unit struct as is_type_unit true
 template<TEMPLATE_UNIT_SHORTHAND>
-struct Unit;//Forward declaration
+struct is_type_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
 
 template<typename T>
-constexpr bool is_unit_v = is_unit<T>::value;
+constexpr bool is_unit_v = is_type_unit<T>::value;
 
 template<typename T>
 concept ArithemeticOrUnit = std::is_arithmetic_v<T> || is_unit_v<T>;
@@ -289,19 +295,23 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
 };
+
+
 #pragma endregion
 
 
+#pragma region Units
 
 //Represents the exponents of each unit
 //Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
 template <TEMPLATE_UNIT_SHORTHAND>
-struct Unit
+//A struct representing a unit as the combination of si unit components
+struct TypeUnit
 {
     double Value;
-    Unit() : Value(0.0) {}
-    Unit( double value ) : Value(value) {}
-#pragma region Unit operators 
+    TypeUnit() : Value(0.0) {}
+    TypeUnit( double value ) : Value(value) {}
+#pragma region TypeUnit operators 
     //Implicit double conversion
     operator double()const
     {
@@ -309,8 +319,8 @@ struct Unit
     }
     inline TYPE_UNIT_SHORTHAND operator=( double value )
     {
-        TYPE_UNIT_SHORTHAND Unit = { value };
-        return Unit;
+        TYPE_UNIT_SHORTHAND TypeUnit = { value };
+        return TypeUnit;
     }
     inline bool operator==( TYPE_UNIT_SHORTHAND& other ) const
     {
@@ -449,75 +459,90 @@ struct Unit
     }
 };
 
-#pragma region  UnitMacros
-    using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
+///namespace extension functions acting on Type unit
+namespace UnitExt
+{
+    template <TEMPLATE_UNIT_SHORTHAND>
+    auto square( TYPE_UNIT_SHORTHAND value )
+    {
+        TYPE_UNIT_SHORTHAND Result = UNIT_ADDITION_SHORTHAND(,){ value * value };
+        return Result;
+    }
+}
+
+namespace Unit
+{
+    using Scalar = TypeUnit<0, 0, 0, 0, 0, 0, 0>;
     using Radian = Scalar;
 
-    using Meter = Unit<1, 0, 0, 0, 0, 0, 0>;
-    using Meter2 = Unit<1, 0, 0, 0, 0, 0, 0>;
-    using SquareMeter = Unit<2, 0, 0, 0, 0, 0, 0>;
+    using Meter = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
+    using Meter2 = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
+    using SquareMeter = TypeUnit<2, 0, 0, 0, 0, 0, 0>;
     using Area = SquareMeter;
-    using CubeMeter = Unit<3, 0, 0, 0, 0, 0, 0>;
+    using CubeMeter = TypeUnit<3, 0, 0, 0, 0, 0, 0>;
     using Volume = CubeMeter;
 
-    using Seconds = Unit<0, 1, 0, 0, 0, 0, 0>;
-    using Hertz = Unit<0, -1, 0, 0, 0, 0, 0>;
+    using Seconds = TypeUnit<0, 1, 0, 0, 0, 0, 0>;
+    using Hertz = TypeUnit<0, -1, 0, 0, 0, 0, 0>;
 
-    using Kilogram = Unit<0, 0, 1, 0, 0, 0, 0>;
+    using Kilogram = TypeUnit<0, 0, 1, 0, 0, 0, 0>;
 
-    using Ampere = Unit<0, 0, 0, 1, 0, 0, 0>;
+    using Ampere = TypeUnit<0, 0, 0, 1, 0, 0, 0>;
 
-    using Kelvin = Unit<0, 0, 0, 0, 1, 0, 0>;
+    using Kelvin = TypeUnit<0, 0, 0, 0, 1, 0, 0>;
 
-    using Mol = Unit<0, 0, 0, 0, 0, 1, 0>;
+    using Mol = TypeUnit<0, 0, 0, 0, 0, 1, 0>;
 
-    using Candela = Unit<0, 0, 0, 0, 0, 0, 1>;
+    using Candela = TypeUnit<0, 0, 0, 0, 0, 0, 1>;
 
-    using Velocity = Unit<1, -1, 0, 0, 0, 0, 0>;
-    using Acceleration = Unit<1, -2, 0, 0, 0, 0, 0>;
-    using Jerk = Unit<1, -3, 0, 0, 0, 0, 0>;
+    using Velocity = TypeUnit<1, -1, 0, 0, 0, 0, 0>;
+    using Acceleration = TypeUnit<1, -2, 0, 0, 0, 0, 0>;
+    using Jerk = TypeUnit<1, -3, 0, 0, 0, 0, 0>;
 
-    using Newton = Unit<1,-2,1,0,0,0,0>;
+    using Newton = TypeUnit<1,-2,1,0,0,0,0>;
     using Force = Newton;
 
-    using Work = Unit<2,-2,1,0,0,0,0>;
+    using Work = TypeUnit<2,-2,1,0,0,0,0>;
     using Torque = Work;
 
-    using Watt = Unit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
-    using Pascal = Unit<-1, -2, 1, 0, 0, 0, 0>; 
+    using Watt = TypeUnit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
+    using Pascal = TypeUnit<-1, -2, 1, 0, 0, 0, 0>; 
 
-    using Coulomb = Unit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
-    using Volt = Unit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
-    using Ohm = Unit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
-    using Siemens = Unit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
-    using Farad = Unit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
-    using Henry = Unit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
-    using Weber = Unit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
-    using Tesla = Unit<0, -2, 1, -1, 0, 0, 0>;
+    using Coulomb = TypeUnit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
+    using Volt = TypeUnit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
+    using Ohm = TypeUnit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
+    using Siemens = TypeUnit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
+    using Farad = TypeUnit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
+    using Henry = TypeUnit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
+    using Weber = TypeUnit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
+    using Tesla = TypeUnit<0, -2, 1, -1, 0, 0, 0>;
 
-    using Entropy = Unit<2, -2, 1, 0, -1, 0, 0>; // J/K
-    using SpecificHeatCapacity = Unit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
-    using StefanBoltzmannConstant = Unit<0, -3, 1, 0, -4, 0, 0>;
+    using Entropy = TypeUnit<2, -2, 1, 0, -1, 0, 0>; // J/K
+    using SpecificHeatCapacity = TypeUnit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
+    using StefanBoltzmannConstant = TypeUnit<0, -3, 1, 0, -4, 0, 0>;
 
-    using Concentration = Unit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
-    using CatalyticActivity = Unit<0, -1, 0, 0, 0, 1, 0>; // mol/s
+    using Concentration = TypeUnit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
+    using CatalyticActivity = TypeUnit<0, -1, 0, 0, 0, 1, 0>; // mol/s
 
-    using Lumen = Unit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
-    using Lux = Unit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
+    using Lumen = TypeUnit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
+    using Lux = TypeUnit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
 
-    using AngularVelocity = Unit<0, -1, 0, 0, 0, 0, 0>; // rad/s
-    using AngularAcceleration = Unit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
-    using Impulse = Unit<1, -1, 1, 0, 0, 0, 0>; // N·s
-    using Momentum = Unit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s*/
+    using AngularVelocity = TypeUnit<0, -1, 0, 0, 0, 0, 0>; // rad/s
+    using AngularAcceleration = TypeUnit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
+    using Impulse = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // N·s
+    using Momentum = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s*/
+}
 
-#pragma endregion
-#pragma region Physical constants
+   
+namespace Constants
+{
+    using namespace Unit;
     const Radian Pi =   3.14159265358979323846;
-#pragma endregion
+}
 
-//Flag unit struct as is_unit true
-template<TEMPLATE_UNIT_SHORTHAND>
-struct is_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
+
+
+
 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
@@ -618,9 +643,7 @@ struct Vector2X2
             {
                 return std::atan(y,x);
             }
-            //Flagged
-            //Should be radian
-            Radian angle = std::atan2(y,x);
+            Unit::Radian angle = std::atan2(y,x);
             return angle;
         }
         inline auto get_angle_y_axis()
@@ -629,9 +652,7 @@ struct Vector2X2
             {
                 return std::atan(x,y);
             }
-            //Flagged
-            //Should be radian
-            Radian angle = std::atan2(x,y);
+            Unit::Radian angle = std::atan2(x,y);
             return angle;
         }
     private:
@@ -671,7 +692,7 @@ constexpr auto create_angled_vector_2x2( const UnitType& magnitude, const AngleT
 {
     UnitType x = magnitude * std::cos( angle );
     UnitType y = magnitude * std::sin( angle );
-    auto Created = CreateVector2X2( x, y );
+    auto Created = create_vector_2x2( x, y );
     return Created;
 }
 
