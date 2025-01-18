@@ -121,7 +121,7 @@ struct Rational
         Rational OtherInverse = other.get_inverse();
         return *this * OtherInverse; 
     }
-    constexpr bool operator==( Rational& other )
+    constexpr bool operator==( Rational& other ) const
     {
         if( Numerator == other.Numerator && Denominator == other.Denominator )
         {
@@ -129,7 +129,7 @@ struct Rational
         }
         return false;
     }
-    constexpr bool operator!=( Rational& other )
+    constexpr bool operator!=( Rational& other ) const
     {
         if( Numerator != other.Numerator || Denominator != other.Denominator )
         {
@@ -223,13 +223,12 @@ struct Rational
 };
 #pragma endregion
 #pragma region Concepts and forward declarations
-template<TEMPLATE_UNIT_SHORTHAND>
-struct TypeUnit;//Forward declaration
-
 //Set default value of is_type_unit to false
 template<typename>
 struct is_type_unit : std::false_type {};
 
+template<TEMPLATE_UNIT_SHORTHAND>
+struct TypeUnit;//Forward declaration
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
@@ -462,12 +461,12 @@ struct TypeUnit
 ///namespace extension functions acting on Type unit
 namespace UnitExt
 {
-    template <TEMPLATE_UNIT_SHORTHAND>
-    auto square( TYPE_UNIT_SHORTHAND value )
-    {
-        TYPE_UNIT_SHORTHAND Result = UNIT_ADDITION_SHORTHAND(,){ value * value };
-        return Result;
-    }
+    //template <TEMPLATE_UNIT_SHORTHAND>
+    //auto square( TYPE_UNIT_SHORTHAND value )
+    //{
+    //    TYPE_UNIT_SHORTHAND Result = UNIT_ADDITION_SHORTHAND(,){ value * value };
+    //    return Result;
+    //}
 }
 
 namespace Unit
