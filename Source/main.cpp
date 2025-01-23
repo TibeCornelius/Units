@@ -1,9 +1,9 @@
 #include<iostream>
 #include "Unitree.hpp"
+#include "Tests.hpp"
 
 using namespace Unit;
 int main()
 {
-    Scalar s = 5;
-    auto Vect = create_vector_2x2(s,s);
+    test_everything();
 }

@@ -51,7 +51,7 @@
 #define TYPE_UNIT_SHORTHAND TypeUnit<UNIT_SHORTHAND>
 
 #define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) TypeUnit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-#define ScalarUnit TypeUnit<Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero(), Rational::Zero()>
+#define ScalarUnit TypeUnit<0, 0, 0, 0, 0, 0, 0>
 
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
@@ -78,147 +78,136 @@
 
 #define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) TypeUnit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
 #define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) TypeUnit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
+#define UNIT_POWER_SHORTHAND( POWER ) TypeUnit<Meters * POWER, Seconds * POWER, Kilogram * POWER, Ampere * POWER, Kelvin * POWER, Mol * POWER, Candela * POWER>
 #pragma endregion
 #pragma region Rational
 struct Rational
 {
     int Numerator;
-    uint Denominator;
+    unsigned int Denominator; // Denominator is now unsigned.
 
-    static constexpr Rational Zero() 
-    {
-        return Rational{0, 1};
-    }
-    constexpr Rational():Numerator(0), Denominator(1){}
-    constexpr Rational( int numerator, uint denominator ): Numerator( numerator ), Denominator( denominator ) {}
-    constexpr Rational( int value ): Numerator( value ), Denominator( 1 ){}
-#pragma region Rational operators
-    Rational operator+( Rational other ) const
-    {
-        Rational r1 = Rational(*this);
+    // Default constructor.
+    constexpr Rational() : Numerator(0), Denominator(1) {}
 
-        set_common_denominator(r1, other);
-        Rational Result = Rational( r1.Numerator + other.Numerator, r1.Denominator);
-        Result.simplify_fraction();
-        return Result;
-    }
-    Rational operator-( Rational other ) const
+    // Parameterized constructor.
+    constexpr Rational(int numerator, unsigned int denominator) : Numerator(numerator), Denominator(denominator)
     {
-        Rational r1 = Rational(*this);
-
-        set_common_denominator(r1, other);
-        Rational Result = Rational( r1.Numerator - other.Numerator, r1.Denominator );
-        Result.simplify_fraction();
-        return Result;
-    }    
-    Rational operator*( Rational& other ) const
-    {
-        Rational Result = { Numerator * other.Numerator, Denominator * other.Denominator };
-        return Result;
-    }
-    Rational operator/( Rational& other ) const
-    {// (a/b) / (c/d) = (a/b) * (d/c)
-        Rational OtherInverse = other.get_inverse();
-        return *this * OtherInverse; 
-    }
-    constexpr bool operator==( Rational& other ) const
-    {
-        if( Numerator == other.Numerator && Denominator == other.Denominator )
+        if (Denominator == 0)
         {
-            return true;
+            throw "Denominator cannot be zero!";
         }
-        return false;
     }
-    constexpr bool operator!=( Rational& other ) const
-    {
-        if( Numerator != other.Numerator || Denominator != other.Denominator )
-        {
-            return true;
-        }
-        return false;
-    }
-    constexpr bool operator>( Rational& other ) const
-    {
-        Rational rSelf = Rational(*this);
 
-        set_common_denominator( rSelf, other );
-        return rSelf.Numerator > other.Numerator;
-    }
-    constexpr bool operator<( Rational& other ) const
-    {
-        Rational rSelf = Rational(*this);
+    // Integer-to-Rational constructor.
+    constexpr Rational(int value) : Numerator(value), Denominator(1) {}
 
-        set_common_denominator( rSelf, other );
-        return rSelf.Numerator < other.Numerator;
-    }
-    constexpr bool operator!=( int other ) const
+    // Simplify the rational number.
+    constexpr Rational simplified() const
     {
-        Rational rSelf = Rational(*this);
-        Rational rOther = Rational(other);
-        return rSelf != rOther;
+        unsigned int gcd = std::gcd(Numerator, Denominator);
+        return {Numerator / static_cast<int>(gcd), Denominator / gcd};
     }
-    constexpr bool operator>( int other ) const
-    {
-        Rational rSelf = Rational(*this);
-        Rational rOther = Rational(other);
-        return rSelf > rOther; 
-    }
-    constexpr bool operator<( int other ) const
-    {
-        Rational rSelf = Rational(*this);
-        Rational rOther = Rational(other);
-        return rSelf < rOther;
-    }
-#pragma endregion
-    friend std::ostream& operator<<( std::ostream& stream, const Rational& rational )
-    {
-        stream <<rational.Numerator<<"/"<<rational.Denominator;
-        return stream;
-    }
-    static void set_common_denominator( Rational& rational_1, Rational& rational_2 )
-    {
-        uint denominator_2 = rational_2.Denominator;
-        Rational unit = { static_cast<int>(rational_1.Denominator), rational_1.Denominator };
 
-        rational_2 = multliply_without_simplifying( rational_2, unit );
-        unit = { static_cast<int>(denominator_2), denominator_2 };
-        rational_1 = multliply_without_simplifying( rational_1, unit );
-    }
-    static Rational multliply_without_simplifying(const Rational& first, const Rational& second)
+    // Addition operator.
+    constexpr Rational operator+(const Rational &other) const
     {
-        // Perform multiplication and return the result as a new Rational
-        Rational Result = { first.Numerator * second.Numerator, first.Denominator * second.Denominator };
-        return Result;
+        return Rational( Numerator * static_cast<int>(other.Denominator) + 
+            other.Numerator * static_cast<int>(Denominator),
+            Denominator * other.Denominator)
+            .simplified();
     }
-    constexpr Rational get_inverse()
+
+    // Subtraction operator.
+    constexpr Rational operator-(const Rational &other) const
     {
-        bool isNegative = Numerator < 0 ? true : false;
-        int NewNumerator = isNegative ? -Denominator : Denominator;
-        uint NewDenominator = std::abs( Numerator ); 
-        return { NewNumerator, NewDenominator };
-    }  
-    void simplify_fraction()
-    {
-        int gcd = std::gcd(Numerator, Denominator);
-        Numerator /= gcd;
-        Denominator /= gcd;
+        return Rational( Numerator * static_cast<int>(other.Denominator) -
+            other.Numerator * static_cast<int>(Denominator),Denominator * other.Denominator)
+            .simplified();
     }
-    void print()
+
+    // Multiplication operator.
+    constexpr Rational operator*(const Rational &other) const
     {
-        std::cout<<Numerator<<"/"<<Denominator<<"\n";
+        return Rational( Numerator * other.Numerator, Denominator * other.Denominator)
+            .simplified();
     }
+
+    // Division operator.
+    constexpr Rational operator/(const Rational &other) const
+    {
+        return *this * Rational(other.Denominator, static_cast<unsigned int>(other.Numerator));
+    }
+
+    // Equality operator.
+    constexpr bool operator==(const Rational &other) const
+    {
+        return Numerator * static_cast<int>(other.Denominator) ==
+            other.Numerator * static_cast<int>(Denominator);
+    }
+
+    // Inequality operator.
+    constexpr bool operator!=(const Rational &other) const
+    {
+        return !(*this == other);
+    }
+
+    // Less-than operator.
+    constexpr bool operator<(const Rational &other) const
+    {
+        return Numerator * static_cast<int>(other.Denominator) <
+            other.Numerator * static_cast<int>(Denominator);
+    }
+
+    // Greater-than operator.
+    constexpr bool operator>(const Rational &other) const
+    {
+        return other < *this;
+    }
+
+    // Less-than-or-equal-to operator.
+    constexpr bool operator<=(const Rational &other) const
+    {
+        return !(*this > other);
+    }
+
+    constexpr bool operator>=(const Rational &other) const
+    {
+        return !(*this < other);
+    }
+
+    // Convert to string representation.
     constexpr std::string to_string() const
     {
-        if( Denominator == 1 )
+        if (Denominator == 1)
         {
             return std::to_string(Numerator);
         }
-        return std::to_string(Numerator)+"/"+std::to_string(Denominator);
+        return std::to_string(Numerator) + "/" + std::to_string(Denominator);
     }
+
+    // Convert to absolute value string representation.
     constexpr std::string to_string_absolute_value() const
     {
-        Rational rSelf = { std::abs(Numerator), Denominator };
-        return rSelf.to_string();
+        Rational rSelf = {std::abs(Numerator), Denominator};
+        if (rSelf.Denominator == 1)
+        {
+            return std::to_string(rSelf.Numerator);
+        }
+        return std::to_string(rSelf.Numerator) + "/" + std::to_string(rSelf.Denominator);
+    }
+
+    // Overload for output stream.
+    friend std::ostream &operator<<(std::ostream &os, const Rational &rational)
+    {
+        if (rational.Denominator == 1)
+        {
+            os << rational.Numerator;
+        }
+        else
+        {
+            os << rational.Numerator << "/" << rational.Denominator;
+        }
+        return os;
     }
 };
 #pragma endregion
@@ -294,6 +283,17 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
 };
+
+template<ArithemeticOrUnit Unit1, uint Unit2>
+struct ResultingPowerUnit;
+
+template<TEMPLATE_UNIT_SHORTHAND, uint Power>
+struct ResultingPowerUnit<TYPE_UNIT_SHORTHAND, Power>
+{
+    using type = UNIT_POWER_SHORTHAND( Power );
+};
+
+
 
 
 #pragma endregion
@@ -459,14 +459,69 @@ struct TypeUnit
 };
 
 ///namespace extension functions acting on Type unit
-namespace UnitExt
+namespace uExt
 {
-    //template <TEMPLATE_UNIT_SHORTHAND>
-    //auto square( TYPE_UNIT_SHORTHAND value )
-    //{
-    //    TYPE_UNIT_SHORTHAND Result = UNIT_ADDITION_SHORTHAND(,){ value * value };
-    //    return Result;
-    //}
+    template <TEMPLATE_UNIT_SHORTHAND>
+    auto square( TYPE_UNIT_SHORTHAND value )
+    {
+        using ResultingUnit = typename ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::type;
+        ResultingUnit Result = { value.Value * value.Value };
+        return Result;
+    }
+
+    
+    
+    template <int power,TEMPLATE_UNIT_SHORTHAND>
+    auto n_power_lg( TYPE_UNIT_SHORTHAND unit )
+    {
+        //https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
+        // Recursive exponentiation by squaring
+        auto fast_power = [](double base, uint exp) -> double 
+        {
+            double result = 1.0;
+            while (exp > 0)
+            {
+                if (exp % 2 == 1) 
+                { // If odd, multiply the result
+                    result *= base;
+                }
+                base *= base; // Square the base
+                exp /= 2;     // Halve the exponent
+            }
+            return result;
+        };
+
+        double Value = fast_power(unit.Value, power);
+
+        // Create and return the resulting unit
+        return ResultingUnit{Value};
+    }
+
+    template <int power, TEMPLATE_UNIT_SHORTHAND>
+    auto n_power_sm( TYPE_UNIT_SHORTHAND unit )
+    {
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
+        double Value = 1; 
+        for( int index = 0 ; index < power ; index++ )
+        {
+            Value = Value * unit.Value;
+        }
+        ResultingUnit Result = { Value };
+        return Result;
+    }
+    //Raise type unit to n power
+    //Using different aproach based on power size
+    template <int power, TEMPLATE_UNIT_SHORTHAND>
+    auto n_power( TYPE_UNIT_SHORTHAND unit )
+    {
+        if constexpr ( power > 10 )
+        {
+            return n_power_lg<power>( unit );
+        }
+
+        return n_power_sm<power>( unit );
+    }
 }
 
 namespace Unit
