@@ -2,7 +2,8 @@
 #include "Unitree.hpp"
 #include "Tests.hpp"
 
+using namespace Unit;
 int main()
 {
-    TestTotal();
+    test_everything();
 }

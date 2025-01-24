@@ -1,7 +1,7 @@
 #include "Unitree.hpp"
-
+using namespace Unit;
 //A test instantiating units, testing unit operations, template instantiations 
-bool UnitTest()
+bool type_unit_test()
 {
     // arithmetric operations +*-/
     bool Success = true;
@@ -19,6 +19,24 @@ bool UnitTest()
     auto resultAdd = m1 + m1;
     auto resultSubtr = m1 - m2;
 
+    auto Square = uExt::square( m1 );
+    auto Power = uExt::n_power_sm<5>(m1);
+
+    auto Power0 = uExt::n_power<0>(m1);
+    if( Power0 != 1 )
+    {
+        Success = false;
+    }
+    Power0 = uExt::n_power_lg<0>(m1);
+    if( Power0 != 1 )
+    {
+        Success = false;
+    }
+    Power0 = uExt::n_power_sm<0>(m1);
+    if( Power0 != 1 )
+    {
+        Success = false;
+    }
     
 
     // equality operators
@@ -64,9 +82,9 @@ bool UnitTest()
 }
 
 //Runs every test
-void TestTotal()
+void test_everything()
 {
-    if( UnitTest() == false )
+    if( type_unit_test() == false )
     {
         std::cout<<"Unit test failed\n";
     }

@@ -18,14 +18,14 @@
 #pragma once
 #include<concepts>
 #include<iostream>
-
-//Set default value of is_unit to false
-template<typename>
-struct is_unit : std::false_type {};
+#include <tuple>
+#include <iostream>
+#include <ostream> 
+#include <numeric> 
 
 
 #pragma region Macros
-#define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) int PREFIX##UNIT
+#define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) Rational PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
 
 #define PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX) \
@@ -48,10 +48,10 @@ struct is_unit : std::false_type {};
 
 #define TEMPLATE_UNIT_SHORTHAND PREFIXED_TEMPLATE_UNIT_SHORTHAND()
 #define UNIT_SHORTHAND PREFIXED_UNIT_SHORTHAND()
-#define TYPE_UNIT_SHORTHAND Unit<UNIT_SHORTHAND>
+#define TYPE_UNIT_SHORTHAND TypeUnit<UNIT_SHORTHAND>
 
-#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) Unit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-#define ScalarUnit Unit<0, 0, 0, 0, 0, 0, 0>
+#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) TypeUnit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
+#define ScalarUnit TypeUnit<0, 0, 0, 0, 0, 0, 0>
 
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
@@ -76,18 +76,159 @@ struct is_unit : std::false_type {};
 
 #define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX_1) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX2)
 
-#define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) Unit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
-#define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) Unit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
+#define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) TypeUnit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
+#define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) TypeUnit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
+#define UNIT_POWER_SHORTHAND( POWER ) TypeUnit<Meters * POWER, Seconds * POWER, Kilogram * POWER, Ampere * POWER, Kelvin * POWER, Mol * POWER, Candela * POWER>
+#pragma endregion
+#pragma region Rational
+struct Rational
+{
+    int Numerator;
+    unsigned int Denominator; // Denominator is now unsigned.
+
+    // Default constructor.
+    constexpr Rational() : Numerator(0), Denominator(1) {}
+
+    // Parameterized constructor.
+    constexpr Rational(int numerator, unsigned int denominator) : Numerator(numerator), Denominator(denominator)
+    {
+        if (Denominator == 0)
+        {
+            throw "Denominator cannot be zero!";
+        }
+    }
+
+    // Integer-to-Rational constructor.
+    constexpr Rational(int value) : Numerator(value), Denominator(1) {}
+
+    // Simplify the rational number.
+    constexpr Rational simplified() const
+    {
+        unsigned int gcd = std::gcd(Numerator, Denominator);
+        return {Numerator / static_cast<int>(gcd), Denominator / gcd};
+    }
+
+    // Addition operator.
+    constexpr Rational operator+(const Rational &other) const
+    {
+        return Rational( Numerator * static_cast<int>(other.Denominator) + 
+            other.Numerator * static_cast<int>(Denominator),
+            Denominator * other.Denominator)
+            .simplified();
+    }
+
+    // Subtraction operator.
+    constexpr Rational operator-(const Rational &other) const
+    {
+        return Rational( Numerator * static_cast<int>(other.Denominator) -
+            other.Numerator * static_cast<int>(Denominator),Denominator * other.Denominator)
+            .simplified();
+    }
+
+    // Multiplication operator.
+    constexpr Rational operator*(const Rational &other) const
+    {
+        return Rational( Numerator * other.Numerator, Denominator * other.Denominator)
+            .simplified();
+    }
+
+    // Division operator.
+    constexpr Rational operator/(const Rational &other) const
+    {
+        return *this * Rational(other.Denominator, static_cast<unsigned int>(other.Numerator));
+    }
+
+    // Equality operator.
+    constexpr bool operator==(const Rational &other) const
+    {
+        return Numerator * static_cast<int>(other.Denominator) ==
+            other.Numerator * static_cast<int>(Denominator);
+    }
+
+    // Inequality operator.
+    constexpr bool operator!=(const Rational &other) const
+    {
+        return !(*this == other);
+    }
+
+    // Less-than operator.
+    constexpr bool operator<(const Rational &other) const
+    {
+        return Numerator * static_cast<int>(other.Denominator) <
+            other.Numerator * static_cast<int>(Denominator);
+    }
+
+    // Greater-than operator.
+    constexpr bool operator>(const Rational &other) const
+    {
+        return other < *this;
+    }
+
+    // Less-than-or-equal-to operator.
+    constexpr bool operator<=(const Rational &other) const
+    {
+        return !(*this > other);
+    }
+
+    constexpr bool operator>=(const Rational &other) const
+    {
+        return !(*this < other);
+    }
+
+    // Convert to string representation.
+    constexpr std::string to_string() const
+    {
+        if (Denominator == 1)
+        {
+            return std::to_string(Numerator);
+        }
+        return std::to_string(Numerator) + "/" + std::to_string(Denominator);
+    }
+
+    // Convert to absolute value string representation.
+    constexpr std::string to_string_absolute_value() const
+    {
+        Rational rSelf = {std::abs(Numerator), Denominator};
+        if (rSelf.Denominator == 1)
+        {
+            return std::to_string(rSelf.Numerator);
+        }
+        return std::to_string(rSelf.Numerator) + "/" + std::to_string(rSelf.Denominator);
+    }
+
+    // Overload for output stream.
+    friend std::ostream &operator<<(std::ostream &os, const Rational &rational)
+    {
+        if (rational.Denominator == 1)
+        {
+            os << rational.Numerator;
+        }
+        else
+        {
+            os << rational.Numerator << "/" << rational.Denominator;
+        }
+        return os;
+    }
+};
 #pragma endregion
 #pragma region Concepts and forward declarations
+//Set default value of is_type_unit to false
+template<typename>
+struct is_type_unit : std::false_type {};
+
+template<TEMPLATE_UNIT_SHORTHAND>
+struct TypeUnit;//Forward declaration
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
+
+
+//Flag unit struct as is_type_unit true
 template<TEMPLATE_UNIT_SHORTHAND>
-struct Unit;//Forward declaration
+struct is_type_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
 
 template<typename T>
-constexpr bool is_unit_v = is_unit<T>::value;
+constexpr bool is_unit_v = is_type_unit<T>::value;
 
 template<typename T>
 concept ArithemeticOrUnit = std::is_arithmetic_v<T> || is_unit_v<T>;
@@ -142,19 +283,34 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
 };
+
+template<ArithemeticOrUnit Unit1, uint Unit2>
+struct ResultingPowerUnit;
+
+template<TEMPLATE_UNIT_SHORTHAND, uint Power>
+struct ResultingPowerUnit<TYPE_UNIT_SHORTHAND, Power>
+{
+    using type = UNIT_POWER_SHORTHAND( Power );
+};
+
+
+
+
 #pragma endregion
 
 
+#pragma region Units
 
 //Represents the exponents of each unit
 //Meters,Seconds,Kilogram,Ampere,Kelvin,Mol,Candela
 template <TEMPLATE_UNIT_SHORTHAND>
-struct Unit
+//A struct representing a unit as the combination of si unit components
+struct TypeUnit
 {
     double Value;
-    Unit() : Value(0.0) {}
-    Unit( double value ) : Value(value) {}
-#pragma region Unit operators 
+    TypeUnit() : Value(0.0) {}
+    TypeUnit( double value ) : Value(value) {}
+#pragma region TypeUnit operators 
     //Implicit double conversion
     operator double()const
     {
@@ -162,8 +318,8 @@ struct Unit
     }
     inline TYPE_UNIT_SHORTHAND operator=( double value )
     {
-        TYPE_UNIT_SHORTHAND Unit = { value };
-        return Unit;
+        TYPE_UNIT_SHORTHAND TypeUnit = { value };
+        return TypeUnit;
     }
     inline bool operator==( TYPE_UNIT_SHORTHAND& other ) const
     {
@@ -227,7 +383,7 @@ struct Unit
     }
     template<bool isVerbose>
 #pragma endregion
-    static constexpr std::array<const char*,7> GetUnitNames()
+    static constexpr std::array<const char*,7> get_unit_names()
     {
         if constexpr( isVerbose )
         {
@@ -235,20 +391,20 @@ struct Unit
         }
         return {"m", "s", "kg", "A", "K", "mol", "cd"};
     }
-    inline void PrintUnitsVerbose() const
+    inline void print_units_verbose() const
     {
         constexpr bool isVerbose = true;
-        std::cout<<GetUnitsToString<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>();
     }
-    inline void PrintUnits() const
+    inline void print_units() const
     {
         constexpr bool isVerbose = false;
-        std::cout<<GetUnitsToString<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>();
     }
     template<bool isVerbose>
-    constexpr std::string GetUnitsToString() const 
+    constexpr std::string get_units_to_string() const 
     {
-        constexpr std::array<int, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
+        constexpr std::array<Rational, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
         constexpr std::array<const char*, 7> unitNames = GetUnitNames<isVerbose>();
 
         std::string result = "Units: "+ std::to_string(Value) + " ";
@@ -260,9 +416,9 @@ struct Unit
             if (exponents[i] > 0) 
             {
                 result += std::string(unitNames[i]);
-                if (exponents[i] != 1)
+                if (exponents[i] != 1 )
                 {
-                    result += "^" + std::to_string(exponents[i]);
+                    result += "^" + exponents[i].to_string();
                 }
                 result += "*";
             }
@@ -286,7 +442,7 @@ struct Unit
                     if (exponents[i] != -1) 
                     {
                         //Make negetive exponent positive since we are already dividing
-                        result += "^" + std::to_string(-exponents[i]);
+                        result += "^" + exponents[i].to_string_absolute_value();
                     }
                     result += "*";
                 }
@@ -302,75 +458,145 @@ struct Unit
     }
 };
 
-#pragma region  UnitMacros
-    using Scalar = Unit<0, 0, 0, 0, 0, 0, 0>;
+///namespace extension functions acting on Type unit
+namespace uExt
+{
+    template <TEMPLATE_UNIT_SHORTHAND>
+    auto square( TYPE_UNIT_SHORTHAND value )
+    {
+        using ResultingUnit = typename ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::type;
+        ResultingUnit Result = { value.Value * value.Value };
+        return Result;
+    }
+
+    
+    
+    template <int power,TEMPLATE_UNIT_SHORTHAND>
+    auto n_power_lg( TYPE_UNIT_SHORTHAND unit )
+    {
+        //https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
+        // Recursive exponentiation by squaring
+        auto fast_power = [](double base, uint exp) -> double 
+        {
+            double result = 1.0;
+            while (exp > 0)
+            {
+                if (exp % 2 == 1) 
+                { // If odd, multiply the result
+                    result *= base;
+                }
+                base *= base; // Square the base
+                exp /= 2;     // Halve the exponent
+            }
+            return result;
+        };
+
+        double Value = fast_power(unit.Value, power);
+
+        // Create and return the resulting unit
+        return ResultingUnit{Value};
+    }
+
+    template <int power, TEMPLATE_UNIT_SHORTHAND>
+    auto n_power_sm( TYPE_UNIT_SHORTHAND unit )
+    {
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
+        double Value = 1; 
+        for( int index = 0 ; index < power ; index++ )
+        {
+            Value = Value * unit.Value;
+        }
+        ResultingUnit Result = { Value };
+        return Result;
+    }
+    //Raise type unit to n power
+    //Using different aproach based on power size
+    template <int power, TEMPLATE_UNIT_SHORTHAND>
+    auto n_power( TYPE_UNIT_SHORTHAND unit )
+    {
+        if constexpr ( power > 10 )
+        {
+            return n_power_lg<power>( unit );
+        }
+
+        return n_power_sm<power>( unit );
+    }
+}
+
+namespace Unit
+{
+    using Scalar = TypeUnit<0, 0, 0, 0, 0, 0, 0>;
     using Radian = Scalar;
 
-    using Meter = Unit<1, 0, 0, 0, 0, 0, 0>;
-    using Meter2 = Unit<1, 0, 0, 0, 0, 0, 0>;
-    using SquareMeter = Unit<2, 0, 0, 0, 0, 0, 0>;
+    using Meter = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
+    using Meter2 = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
+    using SquareMeter = TypeUnit<2, 0, 0, 0, 0, 0, 0>;
     using Area = SquareMeter;
-    using CubeMeter = Unit<3, 0, 0, 0, 0, 0, 0>;
+    using CubeMeter = TypeUnit<3, 0, 0, 0, 0, 0, 0>;
     using Volume = CubeMeter;
 
-    using Seconds = Unit<0, 1, 0, 0, 0, 0, 0>;
-    using Hertz = Unit<0, -1, 0, 0, 0, 0, 0>;
+    using Seconds = TypeUnit<0, 1, 0, 0, 0, 0, 0>;
+    using Hertz = TypeUnit<0, -1, 0, 0, 0, 0, 0>;
 
-    using Kilogram = Unit<0, 0, 1, 0, 0, 0, 0>;
+    using Kilogram = TypeUnit<0, 0, 1, 0, 0, 0, 0>;
 
-    using Ampere = Unit<0, 0, 0, 1, 0, 0, 0>;
+    using Ampere = TypeUnit<0, 0, 0, 1, 0, 0, 0>;
 
-    using Kelvin = Unit<0, 0, 0, 0, 1, 0, 0>;
+    using Kelvin = TypeUnit<0, 0, 0, 0, 1, 0, 0>;
 
-    using Mol = Unit<0, 0, 0, 0, 0, 1, 0>;
+    using Mol = TypeUnit<0, 0, 0, 0, 0, 1, 0>;
 
-    using Candela = Unit<0, 0, 0, 0, 0, 0, 1>;
+    using Candela = TypeUnit<0, 0, 0, 0, 0, 0, 1>;
 
-    using Velocity = Unit<1, -1, 0, 0, 0, 0, 0>;
-    using Acceleration = Unit<1, -2, 0, 0, 0, 0, 0>;
-    using Jerk = Unit<1, -3, 0, 0, 0, 0, 0>;
+    using Velocity = TypeUnit<1, -1, 0, 0, 0, 0, 0>;
+    using Acceleration = TypeUnit<1, -2, 0, 0, 0, 0, 0>;
+    using Jerk = TypeUnit<1, -3, 0, 0, 0, 0, 0>;
 
-    using Newton = Unit<1,-2,1,0,0,0,0>;
+    using Newton = TypeUnit<1,-2,1,0,0,0,0>;
     using Force = Newton;
 
-    using Work = Unit<2,-2,1,0,0,0,0>;
+    using Work = TypeUnit<2,-2,1,0,0,0,0>;
     using Torque = Work;
 
-    using Watt = Unit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
-    using Pascal = Unit<-1, -2, 1, 0, 0, 0, 0>; 
+    using Watt = TypeUnit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
+    using Pascal = TypeUnit<-1, -2, 1, 0, 0, 0, 0>; 
 
-    using Coulomb = Unit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
-    using Volt = Unit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
-    using Ohm = Unit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
-    using Siemens = Unit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
-    using Farad = Unit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
-    using Henry = Unit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
-    using Weber = Unit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
-    using Tesla = Unit<0, -2, 1, -1, 0, 0, 0>;
+    using Coulomb = TypeUnit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
+    using Volt = TypeUnit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
+    using Ohm = TypeUnit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
+    using Siemens = TypeUnit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
+    using Farad = TypeUnit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
+    using Henry = TypeUnit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
+    using Weber = TypeUnit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
+    using Tesla = TypeUnit<0, -2, 1, -1, 0, 0, 0>;
 
-    using Entropy = Unit<2, -2, 1, 0, -1, 0, 0>; // J/K
-    using SpecificHeatCapacity = Unit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
-    using StefanBoltzmannConstant = Unit<0, -3, 1, 0, -4, 0, 0>;
+    using Entropy = TypeUnit<2, -2, 1, 0, -1, 0, 0>; // J/K
+    using SpecificHeatCapacity = TypeUnit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
+    using StefanBoltzmannConstant = TypeUnit<0, -3, 1, 0, -4, 0, 0>;
 
-    using Concentration = Unit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
-    using CatalyticActivity = Unit<0, -1, 0, 0, 0, 1, 0>; // mol/s
+    using Concentration = TypeUnit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
+    using CatalyticActivity = TypeUnit<0, -1, 0, 0, 0, 1, 0>; // mol/s
 
-    using Lumen = Unit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
-    using Lux = Unit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
+    using Lumen = TypeUnit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
+    using Lux = TypeUnit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
 
-    using AngularVelocity = Unit<0, -1, 0, 0, 0, 0, 0>; // rad/s
-    using AngularAcceleration = Unit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
-    using Impulse = Unit<1, -1, 1, 0, 0, 0, 0>; // N·s
-    using Momentum = Unit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s
+    using AngularVelocity = TypeUnit<0, -1, 0, 0, 0, 0, 0>; // rad/s
+    using AngularAcceleration = TypeUnit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
+    using Impulse = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // N·s
+    using Momentum = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s*/
+}
 
-#pragma endregion
-#pragma region Physical constants
+   
+namespace Constants
+{
+    using namespace Unit;
     const Radian Pi =   3.14159265358979323846;
-#pragma endregion
+}
 
-//Flag unit struct as is_unit true
-template<TEMPLATE_UNIT_SHORTHAND>
-struct is_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
+
+
+
 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
@@ -380,7 +606,7 @@ struct Vector2X2
         xType x;
         yType y;
 
-        void PrintVerbose()
+        void print_verbose()
         {
             if constexpr ( std::is_arithmetic_v<xType> )
             {
@@ -397,7 +623,7 @@ struct Vector2X2
             }
             std::cout<<"\n\n";
         }
-        void Print()
+        void print()
         {
             if constexpr ( std::is_arithmetic_v<xType> )
             {
@@ -461,33 +687,31 @@ struct Vector2X2
             return ResultingVector;
         }
         
-        static Vector<xType,yType> Create( xType myX, yType myY )
+        static Vector<xType,yType> create( xType myX, yType myY )
         {
             return { myX, myY };
         }
-        inline auto GetAngleXaxis()
+        inline auto get_angle_x_axis()
         {
             if constexpr( std::is_arithmetic_v<xType> )
             {
                 return std::atan(y,x);
             }
-
-            Radian angle = std::atan2(y,x);
+            Unit::Radian angle = std::atan2(y,x);
             return angle;
         }
-        inline auto GetAngleYaxis()
+        inline auto get_angle_y_axis()
         {
             if constexpr( std::is_arithmetic_v<xType> )
             {
                 return std::atan(x,y);
             }
-
-            Radian angle = std::atan2(x,y);
+            Unit::Radian angle = std::atan2(x,y);
             return angle;
         }
     private:
         template<ArithemeticOrUnit T>
-        constexpr T AddValues( T Value1, T Value2) const
+        constexpr T add_values( T Value1, T Value2) const
         {
             //If not arithetic type we return it in a struct
             if constexpr( std::is_arithmetic_v<T> )
@@ -498,7 +722,7 @@ struct Vector2X2
             return { Value1 + Value2 };
         }
         template<ArithemeticOrUnit T>
-        constexpr T SubtractValues( T Value1, T Value2) const
+        constexpr T subtract_values( T Value1, T Value2) const
         {
             //If not arithetic type we return it in a struct
             if constexpr( std::is_arithmetic_v<T> )
@@ -515,16 +739,18 @@ struct Vector2X2
 //outside of vector struct to not have to specify type 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
 requires VectorHasArithmeticOrUnitBase<xType, yType>
-constexpr auto CreateVector2X2(const xType& x, const yType& y) { return Vector2X2<xType, yType>(x, y); }
+constexpr auto create_vector_2x2(const xType& x, const yType& y) { return Vector2X2<xType, yType>(x, y); }
 
 template<ArithemeticOrUnit UnitType, ArithemeticOrScalarUnit AngleType>
-constexpr auto CreateAngledVector2X2Vector( const UnitType& magnitude, const AngleType& angle )
+constexpr auto create_angled_vector_2x2( const UnitType& magnitude, const AngleType& angle )
 {
     UnitType x = magnitude * std::cos( angle );
     UnitType y = magnitude * std::sin( angle );
-    auto Created = CreateVector2X2( x, y );
+    auto Created = create_vector_2x2( x, y );
     return Created;
 }
+
+
 
 
 
