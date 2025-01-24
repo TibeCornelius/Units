@@ -25,10 +25,57 @@
 
 
 #pragma region Macros
+/*
+ * Macro declarations to ease the proccess of templates class and function declarations.
+ * 
+ * The following list is description of every keyword used in the macros,
+ * numbered in the order they should appear when combined
+ * ( 1 -> First/Most to the right)
+ * 
+ * 1-> SHORTHAND:
+ *      Describes a macro intended for aiding class and function declarations using generics.
+ *      Macros without this suffix soley have the intension to be used while declaring macros. 
+ * 2-> Actions:
+ *      Describes the a type of action to be preformed on the type action.
+ *      Examples:
+ *          Addition,
+ *          Subtraction
+ * 2-> UNIT(S):
+ *      Refers to the physical si unit.
+ *      When used in plural its describes a listing of each si unit in a row.
+ *      Meters, Seconds, ..., Candela
+ * 3-> Type:
+ *      Refers to a type that the marco acts on
+ *      
+ *      Examples:
+ *          UnitType<UNITS>
+ *          Vector..
+ *          Matrix..
+ *          
+ * 4-> TEMPLATE:
+ *      If the macro is intended to be used in a template declaration.
+ *      Most macros have a template counter part, they differ in that the tempalte version
+ *      specifies type, but the regular version does not.
+ *      
+ *      Example:
+ *          template<TEMPLATE_UNIT_SHORTHAND, uint Power> //TEMPLATE_UNIT_SHORTHAND -> Rational Meters, Rational Seconds ..
+ *          struct ResultingPowerUnit<TYPE_UNIT_SHORTHAND, Power>   //TYPE_UNIT_SHORTHAND -> Meters, Seconds..
+ *          {..}
+ * 5-> PREFIX(ED):
+ *      Takes in a prefix as argument and places in in front of the UNITS, to allow multiple instances of the UNITS for opperations.
+ *      When using both the TEMPLATE and regular prefixed marcos, the prefixes should match.
+ *      
+ *      Difference PREFIX and PREFIXED->
+ *          Macros without the "ED" suffix soley have the intension to be used while declaring macros. 
+ *      
+*/
+
+
+
 #define PREFIX_TEMPLATE_UNIT(PREFIX, UNIT) Rational PREFIX##UNIT
 #define PREFIX_UNIT(PREFIX, UNIT) PREFIX##UNIT
 
-#define PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX) \
+#define PREFIXED_TEMPLATE_UNITS_SHORTHAND(PREFIX) \
     PREFIX_TEMPLATE_UNIT(PREFIX, Meters), \
     PREFIX_TEMPLATE_UNIT(PREFIX, Seconds), \
     PREFIX_TEMPLATE_UNIT(PREFIX, Kilogram), \
@@ -37,7 +84,7 @@
     PREFIX_TEMPLATE_UNIT(PREFIX, Mol), \
     PREFIX_TEMPLATE_UNIT(PREFIX, Candela)
 
-#define PREFIXED_UNIT_SHORTHAND(PREFIX) \
+#define PREFIXED_UNITS_SHORTHAND(PREFIX) \
     PREFIX_UNIT(PREFIX, Meters), \
     PREFIX_UNIT(PREFIX, Seconds), \
     PREFIX_UNIT(PREFIX, Kilogram), \
@@ -46,12 +93,12 @@
     PREFIX_UNIT(PREFIX, Mol), \
     PREFIX_UNIT(PREFIX, Candela)
 
-#define TEMPLATE_UNIT_SHORTHAND PREFIXED_TEMPLATE_UNIT_SHORTHAND()
-#define UNIT_SHORTHAND PREFIXED_UNIT_SHORTHAND()
+#define TEMPLATE_UNIT_SHORTHAND PREFIXED_TEMPLATE_UNITS_SHORTHAND()
+#define UNIT_SHORTHAND PREFIXED_UNITS_SHORTHAND()
 #define TYPE_UNIT_SHORTHAND TypeUnit<UNIT_SHORTHAND>
 
-#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) TypeUnit<PREFIXED_UNIT_SHORTHAND(PREFIX)>
-#define ScalarUnit TypeUnit<0, 0, 0, 0, 0, 0, 0>
+#define PREFIXED_TYPE_UNIT_SHORTHAND(PREFIX) TypeUnit<PREFIXED_UNITS_SHORTHAND(PREFIX)>
+#define mScalarUnit TypeUnit<0, 0, 0, 0, 0, 0, 0>
 
 
 #define PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(Prefix) ArithemeticOrUnit Prefix##Type
@@ -74,7 +121,6 @@
     PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_2), \
     PREFIX_TEMPLATE_ARITHEMETIC_OR_UNIT_TYPE(c_3) \
 
-#define DOUBLE_TEMPLATE_UNIT_SHORTHAND( PREFIX_1, PREFIX2 ) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX_1) PREFIXED_TEMPLATE_UNIT_SHORTHAND(PREFIX2)
 
 #define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) TypeUnit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
 #define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) TypeUnit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
@@ -242,7 +288,7 @@ concept VectorHasArithmeticOrUnitBase = (std::is_arithmetic_v<x> && std::is_arit
     || ( isUnit<x> && isUnit<y> );
 
 template<typename T>
-concept isScalarUnit = std::is_same_v<T, ScalarUnit>;
+concept isScalarUnit = std::is_same_v<T, mScalarUnit>;
 
 template <typename T>
 concept ArithemeticOrScalarUnit = std::is_arithmetic_v<T> || isScalarUnit<T>;
@@ -257,7 +303,7 @@ concept SameType = std::is_same_v<T1, T2>;
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingMultlipicationUnit;
 
-template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
 struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
 {   
     using type = UNIT_ADDITION_SHORTHAND(,Other);
@@ -272,7 +318,7 @@ struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,Type2>
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
 struct ResultingDivisionUnit;
 
-template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
 struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
 {
     using type = UNIT_SUBTRACTION_SHORTHAND(,Other);
@@ -353,13 +399,13 @@ struct TypeUnit
     {
         return { this->Value - other.Value };
     }
-    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+    template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
     constexpr auto operator*(const PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other) const
     {
         //Empty first prefix
         return UNIT_ADDITION_SHORTHAND(,Other)( this->Value * other.Value);
     }
-    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(Other)>
+    template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
     constexpr auto operator/( const PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other )const
     {
         //Empty first prefix
@@ -375,7 +421,7 @@ struct TypeUnit
     {
         return { this->Value / scalar };
     }
-    template <PREFIXED_TEMPLATE_UNIT_SHORTHAND(First),PREFIXED_TEMPLATE_UNIT_SHORTHAND(Second)>
+    template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(First),PREFIXED_TEMPLATE_UNITS_SHORTHAND(Second)>
     constexpr auto operator*( const Vector<PREFIXED_TYPE_UNIT_SHORTHAND(First),PREFIXED_TYPE_UNIT_SHORTHAND(Second)> Other )
     {
         //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
@@ -529,25 +575,33 @@ namespace Unit
     using Scalar = TypeUnit<0, 0, 0, 0, 0, 0, 0>;
     using Radian = Scalar;
 
-    using Meter = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
-    using Meter2 = TypeUnit<1, 0, 0, 0, 0, 0, 0>;
-    using SquareMeter = TypeUnit<2, 0, 0, 0, 0, 0, 0>;
+    using Meter = 
+        TypeUnit<1, 0, 0, 0, 0, 0, 0>;
+    using Seconds = 
+        TypeUnit<0, 1, 0, 0, 0, 0, 0>;
+    using Kilogram = 
+        TypeUnit<0, 0, 1, 0, 0, 0, 0>;
+    using Ampere = 
+        TypeUnit<0, 0, 0, 1, 0, 0, 0>;
+    using Kelvin = 
+        TypeUnit<0, 0, 0, 0, 1, 0, 0>;
+    using Mol = 
+        TypeUnit<0, 0, 0, 0, 0, 1, 0>;
+    using Candela = 
+        TypeUnit<0, 0, 0, 0, 0, 0, 1>;
+    
+    
+    using SquareMeter = typename ResultingMultlipicationUnit<Meter,Meter>::type;
     using Area = SquareMeter;
-    using CubeMeter = TypeUnit<3, 0, 0, 0, 0, 0, 0>;
+    using CubeMeter = typename ResultingMultlipicationUnit<SquareMeter,Meter>::type;
     using Volume = CubeMeter;
 
-    using Seconds = TypeUnit<0, 1, 0, 0, 0, 0, 0>;
     using Hertz = TypeUnit<0, -1, 0, 0, 0, 0, 0>;
 
-    using Kilogram = TypeUnit<0, 0, 1, 0, 0, 0, 0>;
 
-    using Ampere = TypeUnit<0, 0, 0, 1, 0, 0, 0>;
 
-    using Kelvin = TypeUnit<0, 0, 0, 0, 1, 0, 0>;
 
-    using Mol = TypeUnit<0, 0, 0, 0, 0, 1, 0>;
 
-    using Candela = TypeUnit<0, 0, 0, 0, 0, 0, 1>;
 
     using Velocity = TypeUnit<1, -1, 0, 0, 0, 0, 0>;
     using Acceleration = TypeUnit<1, -2, 0, 0, 0, 0, 0>;

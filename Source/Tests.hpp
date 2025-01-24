@@ -4,6 +4,8 @@ using namespace Unit;
 bool type_unit_test()
 {
     // arithmetric operations +*-/
+    // success is largely based on the fact that the templates are 
+    // instantiated with any compilation errors
     bool Success = true;
     Meter m1 = 5;
     Meter m2 = 3.5;
@@ -37,6 +39,10 @@ bool type_unit_test()
     {
         Success = false;
     }
+
+    SquareMeter sqm = 5;
+    auto cbm = sqm * m1;
+    CubeMeter cbm2 = 5;
     
 
     // equality operators
