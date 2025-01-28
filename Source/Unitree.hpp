@@ -22,11 +22,12 @@
 #include <iostream>
 #include <ostream> 
 #include <numeric> 
+#include<string>
 
 
 #pragma region Macros
 /*
- * Macro declarations to ease the proccess of templates class and function declarations.
+ * Macro declarations to ease the proccess of templated class and function declarations.
  * 
  * The following list is description of every keyword used in the macros,
  * numbered in the order they should appear when combined
@@ -36,12 +37,12 @@
  *      Describes a macro intended for aiding class and function declarations using generics.
  *      Macros without this suffix soley have the intension to be used while declaring macros. 
  * 2-> Actions:
- *      Describes the a type of action to be preformed on the type action.
+ *      Describes the a type of action to be preformed on the type.
  *      Examples:
  *          Addition,
  *          Subtraction
  * 2-> UNIT(S):
- *      Refers to the physical si unit.
+ *      Refers to the physical SI unit.
  *      When used in plural its describes a listing of each si unit in a row.
  *      Meters, Seconds, ..., Candela
  * 3-> Type:
@@ -63,10 +64,10 @@
  *          {..}
  * 5-> PREFIX(ED):
  *      Takes in a prefix as argument and places in in front of the UNITS, to allow multiple instances of the UNITS for opperations.
- *      When using both the TEMPLATE and regular prefixed marcos, the prefixes should match.
+ *      When using both the TEMPLATE and regular prefixed marcos, the prefixes must match.
  *      
  *      Difference PREFIX and PREFIXED->
- *          Macros without the "ED" suffix soley have the intension to be used while declaring macros. 
+ *          Macros without the "ED" suffix only used when declaring other macros. 
  *      
 */
 
@@ -124,13 +125,14 @@
 
 #define UNIT_ADDITION_SHORTHAND( PREFIX_1, PREFIX_2 ) TypeUnit<PREFIX_1##Meters + PREFIX_2##Meters, PREFIX_1##Seconds + PREFIX_2##Seconds,  PREFIX_1##Kilogram + PREFIX_2##Kilogram, PREFIX_1##Ampere + PREFIX_2##Ampere, PREFIX_1##Kelvin + PREFIX_2##Kelvin, PREFIX_1##Mol + PREFIX_2##Mol, PREFIX_1##Candela + PREFIX_2##Candela>
 #define UNIT_SUBTRACTION_SHORTHAND( PREFIX_1, PREFIX_2) TypeUnit<PREFIX_1##Meters - PREFIX_2##Meters, PREFIX_1##Seconds - PREFIX_2##Seconds,  PREFIX_1##Kilogram - PREFIX_2##Kilogram, PREFIX_1##Ampere - PREFIX_2##Ampere, PREFIX_1##Kelvin - PREFIX_2##Kelvin, PREFIX_1##Mol - PREFIX_2##Mol, PREFIX_1##Candela - PREFIX_2##Candela>
+#define UNIT_EQUALITY_SHORTHAND( PREFIX_1, PREFIX_2) PREFIX_1##Meters != PREFIX_2##Meters || PREFIX_1##Seconds != PREFIX_2##Seconds ||  PREFIX_1##Kilogram != PREFIX_2##Kilogram || PREFIX_1##Ampere != PREFIX_2##Ampere || PREFIX_1##Kelvin != PREFIX_2##Kelvin || PREFIX_1##Mol != PREFIX_2##Mol || PREFIX_1##Candela != PREFIX_2##Candela
 #define UNIT_POWER_SHORTHAND( POWER ) TypeUnit<Meters * POWER, Seconds * POWER, Kilogram * POWER, Ampere * POWER, Kelvin * POWER, Mol * POWER, Candela * POWER>
 #pragma endregion
 #pragma region Rational
 struct Rational
 {
     int Numerator;
-    unsigned int Denominator; // Denominator is now unsigned.
+    unsigned int Denominator; 
 
     // Default constructor.
     constexpr Rational() : Numerator(0), Denominator(1) {}
@@ -178,13 +180,11 @@ struct Rational
             .simplified();
     }
 
-    // Division operator.
     constexpr Rational operator/(const Rational &other) const
     {
         return *this * Rational(other.Denominator, static_cast<unsigned int>(other.Numerator));
     }
 
-    // Equality operator.
     constexpr bool operator==(const Rational &other) const
     {
         return Numerator * static_cast<int>(other.Denominator) ==
@@ -301,16 +301,16 @@ template <typename T1, typename T2>
 concept SameType = std::is_same_v<T1, T2>;
 
 template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
-struct ResultingMultlipicationUnit;
+struct ResultingMultiplicationUnit;
 
 template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
-struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
+struct ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
 {   
     using type = UNIT_ADDITION_SHORTHAND(,Other);
 };
 
 template<TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
-struct ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,Type2>
+struct ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,Type2>
 {
     using type = TYPE_UNIT_SHORTHAND;
 };
@@ -330,10 +330,10 @@ struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
     using type = TYPE_UNIT_SHORTHAND;
 };
 
-template<ArithemeticOrUnit Unit1, uint Unit2>
+template<ArithemeticOrUnit Unit1, int Unit2>
 struct ResultingPowerUnit;
 
-template<TEMPLATE_UNIT_SHORTHAND, uint Power>
+template<TEMPLATE_UNIT_SHORTHAND, int Power>
 struct ResultingPowerUnit<TYPE_UNIT_SHORTHAND, Power>
 {
     using type = UNIT_POWER_SHORTHAND( Power );
@@ -354,15 +354,35 @@ template <TEMPLATE_UNIT_SHORTHAND>
 struct TypeUnit
 {
     double Value;
+    //Flagged 
+    //temporary
+    double v() const{
+        return Value;
+    }
     TypeUnit() : Value(0.0) {}
     TypeUnit( double value ) : Value(value) {}
 #pragma region TypeUnit operators 
     //Implicit double conversion
+    //Flagged should probably only work if type is scalar
+    //result in weird conversion when taking a unit to the nth power, and seting a existing unit of different type 
+    //to this it implicitly converts the nth power to a double and then assigns the existing unit the double with a nother 
+    //implicit conversion
+    /*
     operator double()const
     {
         return Value;
+    }*/
+    template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
+    inline PREFIXED_TYPE_UNIT_SHORTHAND(Other) operator=( PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other )
+    {
+        if constexpr(!( UNIT_EQUALITY_SHORTHAND(,Other)) )
+        {
+            static_assert("Attemptet to assign different TypeUnit to existing TypeUnit\n");
+        }
+        Value = other.Value;
+        return *this;
     }
-    inline TYPE_UNIT_SHORTHAND operator=( double value )
+    inline TYPE_UNIT_SHORTHAND operator=( const double value ) const
     {
         TYPE_UNIT_SHORTHAND TypeUnit = { value };
         return TypeUnit;
@@ -421,14 +441,124 @@ struct TypeUnit
     {
         return { this->Value / scalar };
     }
+
+#pragma region Semi_Unit_Safety operators
+
+    #define SEMI_UNIT_SAFETY_ERROR "\nCompile error, TypeUnit-ArithmeticTypes operations are only allowed when SEMI_UNIT_SAFETY is enabled.\n"
+    inline TYPE_UNIT_SHORTHAND operator+( double valueOther ) const
+    {
+        #ifdef SEMI_UNIT_SAFETY
+        return { this->Value + valueOther };
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+    }
+    inline TYPE_UNIT_SHORTHAND operator-( double valueOther ) const
+    {
+        #ifdef SEMI_UNIT_SAFETY
+        return { this->Value - valueOther };
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+    }
+    //double gets looked at as scalar
+    inline TYPE_UNIT_SHORTHAND operator*( double valueOther ) const
+    {
+        #ifdef SEMI_UNIT_SAFETY
+        return { this->Value * valueOther };
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+    }
+    inline TYPE_UNIT_SHORTHAND operator/( double valueOther ) const
+    {
+        #ifdef SEMI_UNIT_SAFETY
+        return { this->Value / valueOther };
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+    }
+    inline bool operator==( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther == Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+    inline bool operator!=( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther != Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+    inline bool operator<( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther < Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+    inline bool operator>( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther > Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+    inline bool operator>=( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther >= Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+    inline bool operator<=( double valueOther ) const
+    {
+        bool Result;
+        #ifdef SEMI_UNIT_SAFETY
+        Result = valueOther <= Value;
+        #else
+        static_assert( false, SEMI_UNIT_SAFETY_ERROR );
+        #endif
+
+        return Result;
+    }
+#pragma endregion
     template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(First),PREFIXED_TEMPLATE_UNITS_SHORTHAND(Second)>
     constexpr auto operator*( const Vector<PREFIXED_TYPE_UNIT_SHORTHAND(First),PREFIXED_TYPE_UNIT_SHORTHAND(Second)> Other )
     {
         //When multlipying a unit scalar with a vector, thus s * v, we return v * s, wich is defined in the Vector struct.
         return Other * Value;
     }
-    template<bool isVerbose>
+    // Overload for output stream.
+    friend std::ostream &operator<<(std::ostream &os, const TYPE_UNIT_SHORTHAND &unit)
+    {
+        os << unit.get_units_to_string<false>();
+        return os;
+    }
 #pragma endregion
+    template<bool isVerbose>
     static constexpr std::array<const char*,7> get_unit_names()
     {
         if constexpr( isVerbose )
@@ -437,21 +567,22 @@ struct TypeUnit
         }
         return {"m", "s", "kg", "A", "K", "mol", "cd"};
     }
+
     inline void print_units_verbose() const
     {
         constexpr bool isVerbose = true;
-        std::cout<<get_units_to_string<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>()<<"\n";
     }
     inline void print_units() const
     {
         constexpr bool isVerbose = false;
-        std::cout<<get_units_to_string<isVerbose>();
+        std::cout<<get_units_to_string<isVerbose>()<<"\n";
     }
     template<bool isVerbose>
     constexpr std::string get_units_to_string() const 
     {
         constexpr std::array<Rational, 7> exponents = {Meters, Seconds, Kilogram, Ampere, Kelvin, Mol, Candela};
-        constexpr std::array<const char*, 7> unitNames = GetUnitNames<isVerbose>();
+        constexpr std::array<const char*, 7> unitNames = get_unit_names<isVerbose>();
 
         std::string result = "Units: "+ std::to_string(Value) + " ";
 
@@ -499,7 +630,6 @@ struct TypeUnit
 
 
         if (result == "Units: ") result += "1"; // If no units are present
-        result += "\n"; 
         return result;
     }
 };
@@ -510,18 +640,15 @@ namespace uExt
     template <TEMPLATE_UNIT_SHORTHAND>
     auto square( TYPE_UNIT_SHORTHAND value )
     {
-        using ResultingUnit = typename ResultingMultlipicationUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::type;
+        using ResultingUnit = typename ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::type;
         ResultingUnit Result = { value.Value * value.Value };
         return Result;
     }
-
-    
-    
-    template <int power,TEMPLATE_UNIT_SHORTHAND>
-    auto n_power_lg( TYPE_UNIT_SHORTHAND unit )
+    template <int Exponent,TEMPLATE_UNIT_SHORTHAND>
+    auto power_lg( TYPE_UNIT_SHORTHAND unit )
     {
         //https://en.wikipedia.org/wiki/Exponentiation_by_squaring
-        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,Exponent>::type;
         // Recursive exponentiation by squaring
         auto fast_power = [](double base, uint exp) -> double 
         {
@@ -538,107 +665,120 @@ namespace uExt
             return result;
         };
 
-        double Value = fast_power(unit.Value, power);
+        double Value = fast_power(unit.Value, Exponent);
 
         // Create and return the resulting unit
         return ResultingUnit{Value};
     }
 
-    template <int power, TEMPLATE_UNIT_SHORTHAND>
-    auto n_power_sm( TYPE_UNIT_SHORTHAND unit )
+    template <int Exponent, TEMPLATE_UNIT_SHORTHAND>
+    auto power_sm( TYPE_UNIT_SHORTHAND& unit )
     {
-        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,power>::type;
-        double Value = 1; 
-        for( int index = 0 ; index < power ; index++ )
+        using ResultingUnit = typename ResultingPowerUnit<TYPE_UNIT_SHORTHAND,Exponent>::type;
+        double Value = 1;
+        constexpr bool PowerIsPositive = Exponent > 0 ? true : false;
+        constexpr int UpperBound = PowerIsPositive ? Exponent : -Exponent;
+        for( int index = 0 ; index < UpperBound ; index++ )
         {
             Value = Value * unit.Value;
         }
-        ResultingUnit Result = { Value };
-        return Result;
-    }
-    //Raise type unit to n power
-    //Using different aproach based on power size
-    template <int power, TEMPLATE_UNIT_SHORTHAND>
-    auto n_power( TYPE_UNIT_SHORTHAND unit )
-    {
-        if constexpr ( power > 10 )
+        ResultingUnit Result;
+        if constexpr ( PowerIsPositive )
         {
-            return n_power_lg<power>( unit );
+            Result.Value = Value;
+            return Result;
+        }
+        else
+        {
+            Result.Value = 1/Value;
+            return Result;
+        }
+    }
+    //Flagged
+    //Gives wrong result with negative exponents;
+    template <int Exponent, TEMPLATE_UNIT_SHORTHAND>
+    auto power( TYPE_UNIT_SHORTHAND unit )
+    {
+        if constexpr ( Exponent > 10  || Exponent < -10 )
+        {
+            return power_lg<Exponent>( unit );
         }
 
-        return n_power_sm<power>( unit );
+        return power_sm<Exponent>( unit );
     }
 }
 
 namespace Unit
 {
-    using Scalar = TypeUnit<0, 0, 0, 0, 0, 0, 0>;
+    //Flagged
+    //Maybe be incorrect, still need to be checked, written by chatgpt
+    // Base units (for reference)
+    using Scalar = TypeUnit<0, 0, 0, 0, 0, 0, 0>;  // Dimensionless
     using Radian = Scalar;
+    using Meter = TypeUnit<1, 0, 0, 0, 0, 0, 0>;   // Length
+    using Seconds = TypeUnit<0, 1, 0, 0, 0, 0, 0>; // Time
+    using Kilogram = TypeUnit<0, 0, 1, 0, 0, 0, 0>; // Mass
+    using Ampere = TypeUnit<0, 0, 0, 1, 0, 0, 0>;  // Electric current
+    using Kelvin = TypeUnit<0, 0, 0, 0, 1, 0, 0>;  // Temperature
+    using Mol = TypeUnit<0, 0, 0, 0, 0, 1, 0>;     // Amount of substance
+    using Candela = TypeUnit<0, 0, 0, 0, 0, 0, 1>; // Luminous intensity
 
-    using Meter = 
-        TypeUnit<1, 0, 0, 0, 0, 0, 0>;
-    using Seconds = 
-        TypeUnit<0, 1, 0, 0, 0, 0, 0>;
-    using Kilogram = 
-        TypeUnit<0, 0, 1, 0, 0, 0, 0>;
-    using Ampere = 
-        TypeUnit<0, 0, 0, 1, 0, 0, 0>;
-    using Kelvin = 
-        TypeUnit<0, 0, 0, 0, 1, 0, 0>;
-    using Mol = 
-        TypeUnit<0, 0, 0, 0, 0, 1, 0>;
-    using Candela = 
-        TypeUnit<0, 0, 0, 0, 0, 0, 1>;
-    
-    
-    using SquareMeter = typename ResultingMultlipicationUnit<Meter,Meter>::type;
-    using Area = SquareMeter;
-    using CubeMeter = typename ResultingMultlipicationUnit<SquareMeter,Meter>::type;
-    using Volume = CubeMeter;
+    // Derived units
+    using SquareMeter = typename ResultingMultiplicationUnit<Meter, Meter>::type; // m^2
+    using CubeMeter = typename ResultingMultiplicationUnit<SquareMeter, Meter>::type; // m^3
 
-    using Hertz = TypeUnit<0, -1, 0, 0, 0, 0, 0>;
+    // Velocity and Acceleration
+    using Velocity = typename ResultingDivisionUnit<Meter, Seconds>::type; // m/s
+    using Acceleration = typename ResultingDivisionUnit<Velocity, Seconds>::type; // m/s^2
+    using Jerk = typename ResultingDivisionUnit<Acceleration, Seconds>::type; // m/s^3
 
-
-
-
-
-
-    using Velocity = TypeUnit<1, -1, 0, 0, 0, 0, 0>;
-    using Acceleration = TypeUnit<1, -2, 0, 0, 0, 0, 0>;
-    using Jerk = TypeUnit<1, -3, 0, 0, 0, 0, 0>;
-
-    using Newton = TypeUnit<1,-2,1,0,0,0,0>;
+    // Force, Work, Power
+    using Newton = typename ResultingMultiplicationUnit<Acceleration, Kilogram>::type; // N = kg·m/s^2
     using Force = Newton;
+    using Work = typename ResultingMultiplicationUnit<Newton, Meter>::type; // J = N·m
+    using Power = typename ResultingDivisionUnit<Work, Seconds>::type; // W = J/s
 
-    using Work = TypeUnit<2,-2,1,0,0,0,0>;
-    using Torque = Work;
+    // Pressure
+    using Pascal = typename ResultingDivisionUnit<Newton, SquareMeter>::type; // Pa = N/m^2
 
-    using Watt = TypeUnit<2, -3, 1, 0, 0, 0, 0>; // Power: J/s
-    using Pascal = TypeUnit<-1, -2, 1, 0, 0, 0, 0>; 
+    // Electromagnetism
+    using Coulomb = typename ResultingMultiplicationUnit<Seconds, Ampere>::type; // C = A·s
+    using Volt = typename ResultingDivisionUnit<Work, Coulomb>::type; // V = J/C
+    using Ohm = typename ResultingDivisionUnit<Volt, Ampere>::type; // Ω = V/A
+    using Siemens = typename ResultingDivisionUnit<Scalar, Ohm>::type; // S = 1/Ω
+    using Farad = typename ResultingDivisionUnit<Coulomb, Volt>::type; // F = C/V
+    using Henry = typename ResultingMultiplicationUnit<Ohm, Seconds>::type; // H = Ω·s
+    using Weber = typename ResultingMultiplicationUnit<Volt, Seconds>::type; // Wb = V·s
+    using Tesla = typename ResultingDivisionUnit<Weber, SquareMeter>::type; // T = Wb/m^2
 
-    using Coulomb = TypeUnit<0, 1, 0, 1, 0, 0, 0>; // Charge: A·s
-    using Volt = TypeUnit<2, -3, 1, -1, 0, 0, 0>; // Electric potential: W/A
-    using Ohm = TypeUnit<2, -3, 1, -2, 0, 0, 0>; // Resistance: V/A
-    using Siemens = TypeUnit<-2, 3, -1, 2, 0, 0, 0>; // Conductance: 1/Ω
-    using Farad = TypeUnit<-2, 4, -1, 2, 0, 0, 0>; // Capacitance: C/V
-    using Henry = TypeUnit<2, -2, 1, -2, 0, 0, 0>; // Inductance: Ω·s
-    using Weber = TypeUnit<2, -2, 1, -1, 0, 0, 0>; // Magnetic flux: V·s
-    using Tesla = TypeUnit<0, -2, 1, -1, 0, 0, 0>;
+    // Optics
+    using Lumen = typename ResultingMultiplicationUnit<Candela, Scalar>::type; // Lumen = cd·sr
+    using Lux = typename ResultingDivisionUnit<Lumen, SquareMeter>::type; // lx = lm/m^2
 
-    using Entropy = TypeUnit<2, -2, 1, 0, -1, 0, 0>; // J/K
-    using SpecificHeatCapacity = TypeUnit<2, -2, 0, 0, -1, 0, 0>; // J/(kg·K)
-    using StefanBoltzmannConstant = TypeUnit<0, -3, 1, 0, -4, 0, 0>;
+    // Thermodynamics
+    using Entropy = typename ResultingDivisionUnit<Work, Kelvin>::type; // J/K
+    using SpecificHeatCapacity = typename ResultingDivisionUnit<Entropy, Kilogram>::type; // J/(kg·K)
+    using ThermalConductivity = typename ResultingDivisionUnit<Power, typename ResultingMultiplicationUnit<Meter, Kelvin>::type>::type; // W/(m·K)
 
-    using Concentration = TypeUnit<-3, 0, 0, 0, 0, 1, 0>; // mol/m^3
-    using CatalyticActivity = TypeUnit<0, -1, 0, 0, 0, 1, 0>; // mol/s
+    // Chemistry
+    using Concentration = typename ResultingDivisionUnit<Mol, CubeMeter>::type; // mol/m^3
+    using CatalyticActivity = typename ResultingDivisionUnit<Mol, Seconds>::type; // mol/s
 
-    using Lumen = TypeUnit<0, 0, 0, 0, 0, 0, 1>; // cd·sr
-    using Lux = TypeUnit<-2, 0, 0, 0, 0, 0, 1>; // lm/m^2
+    // Additional Mechanics
+    using Momentum = typename ResultingMultiplicationUnit<Velocity, Kilogram>::type; // kg·m/s
+    using Impulse = typename ResultingMultiplicationUnit<Force, Seconds>::type; // N·s
+    using AngularVelocity = typename ResultingDivisionUnit<Radian, Seconds>::type; // rad/s
+    using AngularAcceleration = typename ResultingDivisionUnit<AngularVelocity, Seconds>::type; // rad/s^2
 
-    using AngularVelocity = TypeUnit<0, -1, 0, 0, 0, 0, 0>; // rad/s
-    using AngularAcceleration = TypeUnit<0, -2, 0, 0, 0, 0, 0>; // rad/s^2
-    using Impulse = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // N·s
-    using Momentum = TypeUnit<1, -1, 1, 0, 0, 0, 0>; // kg·m/s*/
+    // Radiation and Photonics
+    using Gray = typename ResultingDivisionUnit<Work, Kilogram>::type; // Gy = J/kg (Absorbed dose)
+    using Sievert = Gray; // Sv = Gy (Equivalent dose)
+
+    // Advanced Derived Units
+    using StefanBoltzmannConstant = typename ResultingDivisionUnit<Power, typename ResultingMultiplicationUnit<SquareMeter, typename ResultingPowerUnit<Kelvin, 4>::type>::type>::type; // W/(m^2·K^4)
+    using PlanckConstant = typename ResultingMultiplicationUnit<Work, Seconds>::type; // J·s
+    using BoltzmannConstant = typename ResultingDivisionUnit<Entropy, Kelvin>::type; // J/K
+    using GasConstant = typename ResultingDivisionUnit<Work, typename ResultingMultiplicationUnit<Mol, Kelvin>::type>::type; // J/(mol·K)
 }
 
    
@@ -725,8 +865,8 @@ struct Vector2X2
         template<ArithemeticOrUnit Multiplier>
         inline auto operator*( const Multiplier& scalarMultlipier ) const
         {
-            using Resulting_x_unit = typename ResultingMultlipicationUnit<xType,Multiplier>::type;
-            using Resulting_y_unit = typename ResultingMultlipicationUnit<yType,Multiplier>::type;
+            using Resulting_x_unit = typename ResultingMultiplicationUnit<xType,Multiplier>::type;
+            using Resulting_y_unit = typename ResultingMultiplicationUnit<yType,Multiplier>::type;
 
             Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x * scalarMultlipier, y * scalarMultlipier }; 
             return ResultingVector ;
@@ -787,7 +927,6 @@ struct Vector2X2
             return { Value1 - Value2 };
         }
 };
-#define mCreateVector2X2(x,y) Vector<decltype(x),decltype(y)>::CreateVector2X2(x,y)
 
 //Helper function to deduce template types
 //outside of vector struct to not have to specify type 
