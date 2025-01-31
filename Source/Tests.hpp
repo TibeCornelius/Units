@@ -130,3 +130,11 @@ void test_everything()
     }
 }
 
+void print_compile_mode()
+{
+    #ifdef SEMI_UNIT_SAFETY
+    std::cout<<"Semi unit safety activated\n";
+    #else
+    std::cout<<"Semi unit safety disabled\n";
+    #endif
+}

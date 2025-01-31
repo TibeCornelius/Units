@@ -267,8 +267,6 @@ struct TypeUnit;//Forward declaration
 template<typename T>
 concept Arithmetic = std::is_arithmetic_v<T>;
 
-
-
 //Flag unit struct as is_type_unit true
 template<TEMPLATE_UNIT_SHORTHAND>
 struct is_type_unit<TYPE_UNIT_SHORTHAND> : std::true_type {};
@@ -300,36 +298,6 @@ struct Vector;//Forward declaration
 template <typename T1, typename T2>
 concept SameType = std::is_same_v<T1, T2>;
 
-template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
-struct ResultingMultiplicationUnit;
-
-template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
-struct ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
-{   
-    using type = UNIT_ADDITION_SHORTHAND(,Other);
-};
-
-template<TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
-struct ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,Type2>
-{
-    using type = TYPE_UNIT_SHORTHAND;
-};
-
-template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
-struct ResultingDivisionUnit;
-
-template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
-struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
-{
-    using type = UNIT_SUBTRACTION_SHORTHAND(,Other);
-};
-
-template<TEMPLATE_UNIT_SHORTHAND,Arithmetic Type2>
-struct ResultingDivisionUnit<TYPE_UNIT_SHORTHAND,Type2>
-{
-    using type = TYPE_UNIT_SHORTHAND;
-};
-
 template<ArithemeticOrUnit Unit1, int Unit2>
 struct ResultingPowerUnit;
 
@@ -339,7 +307,15 @@ struct ResultingPowerUnit<TYPE_UNIT_SHORTHAND, Power>
     using type = UNIT_POWER_SHORTHAND( Power );
 };
 
+template<ArithemeticOrUnit Unit1, ArithemeticOrUnit Unit2>
+struct ResultingTypeUnit;
 
+template<TEMPLATE_UNIT_SHORTHAND,PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
+struct ResultingTypeUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)>
+{
+    using Multiplication = UNIT_ADDITION_SHORTHAND(,Other);
+    using Division = UNIT_SUBTRACTION_SHORTHAND(,Other);
+};
 
 
 #pragma endregion
@@ -362,16 +338,6 @@ struct TypeUnit
     TypeUnit() : Value(0.0) {}
     TypeUnit( double value ) : Value(value) {}
 #pragma region TypeUnit operators 
-    //Implicit double conversion
-    //Flagged should probably only work if type is scalar
-    //result in weird conversion when taking a unit to the nth power, and seting a existing unit of different type 
-    //to this it implicitly converts the nth power to a double and then assigns the existing unit the double with a nother 
-    //implicit conversion
-    /*
-    operator double()const
-    {
-        return Value;
-    }*/
     template <PREFIXED_TEMPLATE_UNITS_SHORTHAND(Other)>
     inline PREFIXED_TYPE_UNIT_SHORTHAND(Other) operator=( PREFIXED_TYPE_UNIT_SHORTHAND(Other)& other )
     {
@@ -640,7 +606,7 @@ namespace uExt
     template <TEMPLATE_UNIT_SHORTHAND>
     auto square( TYPE_UNIT_SHORTHAND value )
     {
-        using ResultingUnit = typename ResultingMultiplicationUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::type;
+        using ResultingUnit = typename ResultingTypeUnit<TYPE_UNIT_SHORTHAND,TYPE_UNIT_SHORTHAND>::Multiplication;
         ResultingUnit Result = { value.Value * value.Value };
         return Result;
     }
@@ -724,61 +690,61 @@ namespace Unit
     using Candela = TypeUnit<0, 0, 0, 0, 0, 0, 1>; // Luminous intensity
 
     // Derived units
-    using SquareMeter = typename ResultingMultiplicationUnit<Meter, Meter>::type; // m^2
-    using CubeMeter = typename ResultingMultiplicationUnit<SquareMeter, Meter>::type; // m^3
-
+    using SquareMeter = typename ResultingTypeUnit<Meter, Meter>::Multiplication; // m^2
+    using CubeMeter = typename ResultingTypeUnit<SquareMeter, Meter>::Division; // m^3
     // Velocity and Acceleration
-    using Velocity = typename ResultingDivisionUnit<Meter, Seconds>::type; // m/s
-    using Acceleration = typename ResultingDivisionUnit<Velocity, Seconds>::type; // m/s^2
-    using Jerk = typename ResultingDivisionUnit<Acceleration, Seconds>::type; // m/s^3
+    using Velocity = typename ResultingTypeUnit<Meter, Seconds>::Division; // m/s
+    using Acceleration = typename ResultingTypeUnit<Velocity, Seconds>::Division; // m/s^2
+    using Jerk = typename ResultingTypeUnit<Acceleration, Seconds>::Division; // m/s^3
 
     // Force, Work, Power
-    using Newton = typename ResultingMultiplicationUnit<Acceleration, Kilogram>::type; // N = kg·m/s^2
+    using Newton = typename ResultingTypeUnit<Acceleration, Kilogram>::Multiplication; // N = kg·m/s^2
     using Force = Newton;
-    using Work = typename ResultingMultiplicationUnit<Newton, Meter>::type; // J = N·m
-    using Power = typename ResultingDivisionUnit<Work, Seconds>::type; // W = J/s
+    using Work = typename ResultingTypeUnit<Newton, Meter>::Multiplication; // J = N·m
+    using Power = typename ResultingTypeUnit<Work, Seconds>::Division; // W = J/s
 
     // Pressure
-    using Pascal = typename ResultingDivisionUnit<Newton, SquareMeter>::type; // Pa = N/m^2
+    using Pascal = typename ResultingTypeUnit<Newton, SquareMeter>::Division; // Pa = N/m^2
 
     // Electromagnetism
-    using Coulomb = typename ResultingMultiplicationUnit<Seconds, Ampere>::type; // C = A·s
-    using Volt = typename ResultingDivisionUnit<Work, Coulomb>::type; // V = J/C
-    using Ohm = typename ResultingDivisionUnit<Volt, Ampere>::type; // Ω = V/A
-    using Siemens = typename ResultingDivisionUnit<Scalar, Ohm>::type; // S = 1/Ω
-    using Farad = typename ResultingDivisionUnit<Coulomb, Volt>::type; // F = C/V
-    using Henry = typename ResultingMultiplicationUnit<Ohm, Seconds>::type; // H = Ω·s
-    using Weber = typename ResultingMultiplicationUnit<Volt, Seconds>::type; // Wb = V·s
-    using Tesla = typename ResultingDivisionUnit<Weber, SquareMeter>::type; // T = Wb/m^2
+    using Coulomb = typename ResultingTypeUnit<Seconds, Ampere>::Multiplication; // C = A·s
+    using Volt = typename ResultingTypeUnit<Work, Coulomb>::Division; // V = J/C
+    using Ohm = typename ResultingTypeUnit<Volt, Ampere>::Division; // Ω = V/A
+    using Siemens = typename ResultingTypeUnit<Scalar, Ohm>::Division; // S = 1/Ω
+    using Farad = typename ResultingTypeUnit<Coulomb, Volt>::Division; // F = C/V
+    using Henry = typename ResultingTypeUnit<Ohm, Seconds>::Multiplication; // H = Ω·s
+    using Weber = typename ResultingTypeUnit<Volt, Seconds>::Multiplication; // Wb = V·s
+    using Tesla = typename ResultingTypeUnit<Weber, SquareMeter>::Division; // T = Wb/m^2
 
     // Optics
-    using Lumen = typename ResultingMultiplicationUnit<Candela, Scalar>::type; // Lumen = cd·sr
-    using Lux = typename ResultingDivisionUnit<Lumen, SquareMeter>::type; // lx = lm/m^2
+    using Lumen = typename ResultingTypeUnit<Candela, Scalar>::Multiplication; // Lumen = cd·sr
+    using Lux = typename ResultingTypeUnit<Lumen, SquareMeter>::Division; // lx = lm/m^2
 
     // Thermodynamics
-    using Entropy = typename ResultingDivisionUnit<Work, Kelvin>::type; // J/K
-    using SpecificHeatCapacity = typename ResultingDivisionUnit<Entropy, Kilogram>::type; // J/(kg·K)
-    using ThermalConductivity = typename ResultingDivisionUnit<Power, typename ResultingMultiplicationUnit<Meter, Kelvin>::type>::type; // W/(m·K)
+    using Entropy = typename ResultingTypeUnit<Work, Kelvin>::Division; // J/K
+    using SpecificHeatCapacity = typename ResultingTypeUnit<Entropy, Kilogram>::Division; // J/(kg·K)
+    using ThermalConductivity = typename ResultingTypeUnit<Power, typename ResultingTypeUnit<Meter, Kelvin>::Multiplication>::Division; // W/(m·K)
 
     // Chemistry
-    using Concentration = typename ResultingDivisionUnit<Mol, CubeMeter>::type; // mol/m^3
-    using CatalyticActivity = typename ResultingDivisionUnit<Mol, Seconds>::type; // mol/s
+    using Concentration = typename ResultingTypeUnit<Mol, CubeMeter>::Division; // mol/m^3
+    using CatalyticActivity = typename ResultingTypeUnit<Mol, Seconds>::Division; // mol/s
 
     // Additional Mechanics
-    using Momentum = typename ResultingMultiplicationUnit<Velocity, Kilogram>::type; // kg·m/s
-    using Impulse = typename ResultingMultiplicationUnit<Force, Seconds>::type; // N·s
-    using AngularVelocity = typename ResultingDivisionUnit<Radian, Seconds>::type; // rad/s
-    using AngularAcceleration = typename ResultingDivisionUnit<AngularVelocity, Seconds>::type; // rad/s^2
+    using Momentum = typename ResultingTypeUnit<Velocity, Kilogram>::Multiplication; // kg·m/s
+    using Impulse = typename ResultingTypeUnit<Force, Seconds>::Multiplication; // N·s
+    using AngularVelocity = typename ResultingTypeUnit<Radian, Seconds>::Division; // rad/s
+    using AngularAcceleration = typename ResultingTypeUnit<AngularVelocity, Seconds>::Division; // rad/s^2
 
     // Radiation and Photonics
-    using Gray = typename ResultingDivisionUnit<Work, Kilogram>::type; // Gy = J/kg (Absorbed dose)
+    using Gray = typename ResultingTypeUnit<Work, Kilogram>::Division; // Gy = J/kg (Absorbed dose)
     using Sievert = Gray; // Sv = Gy (Equivalent dose)
 
     // Advanced Derived Units
-    using StefanBoltzmannConstant = typename ResultingDivisionUnit<Power, typename ResultingMultiplicationUnit<SquareMeter, typename ResultingPowerUnit<Kelvin, 4>::type>::type>::type; // W/(m^2·K^4)
-    using PlanckConstant = typename ResultingMultiplicationUnit<Work, Seconds>::type; // J·s
-    using BoltzmannConstant = typename ResultingDivisionUnit<Entropy, Kelvin>::type; // J/K
-    using GasConstant = typename ResultingDivisionUnit<Work, typename ResultingMultiplicationUnit<Mol, Kelvin>::type>::type; // J/(mol·K)
+    using StefanBoltzmannConstant = typename ResultingTypeUnit<Power, typename ResultingTypeUnit<SquareMeter, typename ResultingPowerUnit<Kelvin, 4>::type>::Multiplication>::Division; // W/(m^2·K^4)
+    using PlanckConstant = typename ResultingTypeUnit<Work, Seconds>::Multiplication; // J·s
+    using BoltzmannConstant = typename ResultingTypeUnit<Entropy, Kelvin>::Division; // J/K
+    using GasConstant = typename ResultingTypeUnit<Work, typename ResultingTypeUnit<Mol, Kelvin>::Multiplication>::Division; // J/(mol·K)
+
 }
 
    
@@ -787,9 +753,6 @@ namespace Constants
     using namespace Unit;
     const Radian Pi =   3.14159265358979323846;
 }
-
-
-
 
 
 template<ArithemeticOrUnit xType, ArithemeticOrUnit yType>
@@ -865,8 +828,8 @@ struct Vector2X2
         template<ArithemeticOrUnit Multiplier>
         inline auto operator*( const Multiplier& scalarMultlipier ) const
         {
-            using Resulting_x_unit = typename ResultingMultiplicationUnit<xType,Multiplier>::type;
-            using Resulting_y_unit = typename ResultingMultiplicationUnit<yType,Multiplier>::type;
+            using Resulting_x_unit = typename ResultingTypeUnit<xType,Multiplier>::Multiplication;
+            using Resulting_y_unit = typename ResultingTypeUnit<yType,Multiplier>::Multiplication;
 
             Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x * scalarMultlipier, y * scalarMultlipier }; 
             return ResultingVector ;
@@ -874,8 +837,8 @@ struct Vector2X2
         template<ArithemeticOrUnit Divider>
         inline auto operator/( const Divider& scalarDivider ) const
         {
-            using Resulting_x_unit = typename ResultingDivisionUnit<xType,Divider>::type;
-            using Resulting_y_unit = typename ResultingDivisionUnit<yType,Divider>::type;
+            using Resulting_x_unit = typename ResultingTypeUnit<xType,Divider>::Division;
+            using Resulting_y_unit = typename ResultingTypeUnit<yType,Divider>::Division;
 
             Vector<Resulting_x_unit,Resulting_y_unit> ResultingVector = { x / scalarDivider, y / scalarDivider };
             return ResultingVector;

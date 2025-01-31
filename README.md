@@ -12,6 +12,13 @@ git clone https://github.com/TibeCornelius/Units.git
 
 ## Usage
 
+Build options
+
+Semi unit safety : -DSEMI_UNIT_SAFETY=on/off
+
+enables Semi unit safety, allowing physical type unit arithmetic type cross operations. 
+
+
 ```c++
 #include "Unitree.hpp"
 ```
