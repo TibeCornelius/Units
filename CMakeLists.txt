@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(UnitsLibrary)
 
-# Specify C++20 standard
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
@@ -15,7 +14,7 @@ option(ENABLE_RANDOM "Enable the 'Random' macro" OFF)
 
 file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/Source/*.cpp")
 
-add_executable( ${PROJECT_NAME} ${SOURCES})
+add_executable( ${PROJECT_NAME} ${SOURCES} )
 
 # Conditionally add the compile definition
 if(SEMI_UNIT_SAFETY)

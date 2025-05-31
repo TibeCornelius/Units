@@ -1,6 +1,6 @@
 #include<iostream>
 #include "Unitree.hpp"
-#include "Tests.hpp"
+#include "SiUnitSingleton.hpp"
 #ifdef SEMI_UNIT_SAFETY
 #include "CompileTests.hpp"
 #endif
@@ -12,6 +12,6 @@ int main()
     #ifdef SEMI_UNIT_SAFETY
     test_compile_definitions();
     #endif
-
-    print_compile_mode();
+    //test_base_units();
+    //print_compile_mode();
 }

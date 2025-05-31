@@ -1,4 +1,5 @@
 #include "Unitree.hpp"
+#include "SiUnitSingleton.hpp"
 using namespace Unit;
 //A test instantiating units, testing unit operations, template instantiations 
 bool type_unit_test()
@@ -117,6 +118,12 @@ bool type_unit_test()
     return Success;
 }
 
+//void test_base_units()
+//{
+//    cMeter m1{};
+//    cMeter m2{};
+//    auto r = m1*m2;
+//}
 //Runs every test
 void test_everything()
 {
