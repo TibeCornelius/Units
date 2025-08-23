@@ -146,6 +146,11 @@ struct Rational
         }
     }
 
+    constexpr float to_float()
+    {
+        return static_cast<float>(Numerator) / static_cast<float>(Denominator);
+    }
+
     // Integer-to-Rational constructor.
     constexpr Rational(int value) : Numerator(value), Denominator(1) {}
 
@@ -172,6 +177,7 @@ struct Rational
             other.Numerator * static_cast<int>(Denominator),Denominator * other.Denominator)
             .simplified();
     }
+
 
     // Multiplication operator.
     constexpr Rational operator*(const Rational &other) const
@@ -322,19 +328,7 @@ struct ResultingTypeUnit<TYPE_UNIT_SHORTHAND,PREFIXED_TYPE_UNIT_SHORTHAND(Other)
 
 
 
-///Represents a single entry in a unit type.
-//If a unit is m/s^2, the base primitive would represent m.
-//The baseconversion represents the conversion rate to the SI unit.
-//Km has a 1 000 000 Converion to m
-struct BasePrimitiveUnit
-{
-    constexpr BasePrimitiveUnit( Rational base ) : baseConversion( base ){} 
-    Rational baseConversion;
-    constexpr bool operator==( const BasePrimitiveUnit& other ) const
-    {
-        return baseConversion == other.baseConversion;
-    }
-};
+
 
 #pragma region Units
 

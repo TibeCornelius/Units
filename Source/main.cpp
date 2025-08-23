@@ -1,11 +1,10 @@
 #include<iostream>
-#include "Unitree.hpp"
-#include "SiUnitSingleton.hpp"
+#include <print>
+#include "Tests.hpp"
 #ifdef SEMI_UNIT_SAFETY
 #include "CompileTests.hpp"
 #endif
 
-using namespace Unit;
 int main()
 {
 
@@ -14,4 +13,10 @@ int main()
     #endif
     //test_base_units();
     //print_compile_mode();
+    if( Eidos::esTestUnitSingleton() == false )
+    {
+        std::println("Test failed");
+    }
+
+
 }
